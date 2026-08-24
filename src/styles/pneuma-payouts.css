@@ -22,6 +22,38 @@
   padding: 0.65rem;
 }
 
+.pneuma-payouts [data-step-panel][hidden] {
+  display: none;
+}
+
+.pneuma-payouts .wizard-steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  border-bottom: 1px solid var(--color-border-light-primary, #777);
+  padding-bottom: 0.4rem;
+}
+
+.pneuma-payouts .wizard-step {
+  color: var(--color-text-dark-secondary, #777);
+  font-size: 0.85rem;
+}
+
+.pneuma-payouts .wizard-step b {
+  display: inline-grid;
+  width: 1.25rem;
+  height: 1.25rem;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+}
+
+.pneuma-payouts .wizard-step--active {
+  color: var(--color-text-hyperlink, #b07800);
+  font-weight: 700;
+}
+
 .pneuma-payouts .payout-heading p {
   margin: 0 0 0.4rem;
 }
@@ -65,6 +97,74 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
+}
+
+.pneuma-payouts .wizard-button {
+  width: auto;
+  margin: 0;
+  padding: 0.25rem 0.75rem;
+}
+
+.pneuma-payouts .reward-heading {
+  display: grid;
+  grid-template-columns: minmax(10rem, 1fr) minmax(16rem, 2fr);
+  gap: 1rem;
+  margin-bottom: 0.6rem;
+}
+
+.pneuma-payouts .reward-heading > div {
+  display: flex;
+  flex-direction: column;
+}
+
+.pneuma-payouts .eyebrow {
+  color: var(--color-text-dark-secondary, #777);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.pneuma-payouts .recipient-summary ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.65rem;
+  margin: 0.15rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pneuma-payouts .group-rewards {
+  margin: 0;
+  border: 1px solid var(--color-border-light-primary, #777);
+  border-radius: 4px;
+  padding: 0.65rem;
+}
+
+.pneuma-payouts .group-rewards legend {
+  padding: 0 0.35rem;
+  font-weight: 700;
+}
+
+.pneuma-payouts .group-rewards p {
+  margin: 0 0 0.5rem;
+}
+
+.pneuma-payouts .reward-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(7rem, 1fr));
+  gap: 0.5rem;
+}
+
+.pneuma-payouts .reward-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-weight: 600;
+}
+
+.pneuma-payouts .reward-grid input {
+  text-align: right;
 }
 
 .pneuma-payouts .participant-toggle,

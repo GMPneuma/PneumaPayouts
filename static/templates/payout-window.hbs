@@ -1,113 +1,188 @@
 <form class="payout-form" autocomplete="off">
-  <header class="payout-heading">
-    <p>Select the players and characters who participated in this session.</p>
+  <nav class="wizard-steps" aria-label="Payout steps">
+    <span
+      class="wizard-step wizard-step--active"
+      data-step-indicator="participants"
+    ><b>1</b> Participants</span>
+    <i class="fas fa-chevron-right" aria-hidden="true"></i>
+    <span class="wizard-step" data-step-indicator="rewards"><b>2</b>
+      Rewards</span>
+  </nav>
 
-    <div class="payout-metadata">
-      <label>
-        <span>Session label</span>
-        <input
-          type="text"
-          name="sessionLabel"
-          placeholder="Session name or number"
-          required
-        />
-      </label>
+  <section data-step-panel="participants">
+    <header class="payout-heading">
+      <p>Select the players and characters who participated in this session.</p>
 
-      <label>
-        <span>Notes</span>
-        <textarea
-          name="notes"
-          rows="2"
-          placeholder="Optional payout notes"
-        ></textarea>
-      </label>
-    </div>
-  </header>
+      <div class="payout-metadata">
+        <label>
+          <span>Session label</span>
+          <input
+            type="text"
+            name="sessionLabel"
+            placeholder="Session name or number"
+            required
+          />
+        </label>
 
-  <section class="participant-list" aria-label="Session participants">
-    {{#each players}}
-      <article
-        class="participant {{eligibilityClass}}"
-        data-player-row
-        data-user-id="{{userId}}"
-      >
-        <header class="participant-header">
-          <label class="participant-toggle">
-            <input
-              type="checkbox"
-              name="userIds"
-              value="{{userId}}"
-              data-user-toggle
-              data-selected="{{selected}}"
-              data-eligible="{{eligible}}"
-            />
-            <strong>{{userName}}</strong>
-          </label>
+        <label>
+          <span>Notes</span>
+          <textarea
+            name="notes"
+            rows="2"
+            placeholder="Optional payout notes"
+          ></textarea>
+        </label>
+      </div>
+    </header>
 
-          {{#if defaultActor}}
-            <label class="actor-option actor-option--default">
+    <section class="participant-list" aria-label="Session participants">
+      {{#each players}}
+        <article
+          class="participant {{eligibilityClass}}"
+          data-player-row
+          data-user-id="{{userId}}"
+        >
+          <header class="participant-header">
+            <label class="participant-toggle">
               <input
                 type="checkbox"
-                name="actorIds"
-                value="{{defaultActor.actorId}}"
-                data-actor-toggle
-                data-actor-id="{{defaultActor.actorId}}"
-                data-primary="true"
-                data-selected="true"
+                name="userIds"
+                value="{{userId}}"
+                data-user-toggle
+                data-selected="{{selected}}"
+                data-eligible="{{eligible}}"
               />
-              <span>{{defaultActor.actorName}}</span>
-              {{#if defaultActor.shared}}<span
-                  class="tag tag--warning"
-                >Shared</span>{{/if}}
+              <strong>{{userName}}</strong>
             </label>
-          {{else}}
-            <span class="empty-actors" title="{{warningText}}">No eligible Actor</span>
-          {{/if}}
 
-          {{#if hasOtherActors}}
-            <button
-              type="button"
-              class="show-other-actors"
-              data-show-other-actors
-              aria-expanded="false"
-            >Show other actors</button>
-          {{/if}}
-
-          <span class="presence {{presenceClass}}" title="{{presenceLabel}}">
-            <i class="fas fa-circle" aria-hidden="true"></i>
-          </span>
-        </header>
-
-        {{#if hasOtherActors}}
-          <div class="other-actors" data-other-actors hidden>
-            {{#each otherActors}}
-              <label class="actor-option">
+            {{#if defaultActor}}
+              <label class="actor-option actor-option--default">
                 <input
                   type="checkbox"
                   name="actorIds"
-                  value="{{actorId}}"
+                  value="{{defaultActor.actorId}}"
                   data-actor-toggle
-                  data-actor-id="{{actorId}}"
-                  data-primary="false"
-                  data-selected="false"
+                  data-actor-id="{{defaultActor.actorId}}"
+                  data-actor-name="{{defaultActor.actorName}}"
+                  data-primary="true"
+                  data-selected="true"
                 />
-                <span>{{actorName}}</span>
-                {{#if shared}}<span
+                <span>{{defaultActor.actorName}}</span>
+                {{#if defaultActor.shared}}<span
                     class="tag tag--warning"
                   >Shared</span>{{/if}}
               </label>
-            {{/each}}
-          </div>
-        {{/if}}
-      </article>
-    {{else}}
-      <p class="empty-players">No player accounts exist in this world.</p>
-    {{/each}}
+            {{else}}
+              <span class="empty-actors" title="{{warningText}}">No eligible
+                Actor</span>
+            {{/if}}
+
+            {{#if hasOtherActors}}
+              <button
+                type="button"
+                class="show-other-actors"
+                data-show-other-actors
+                aria-expanded="false"
+              >Show other actors</button>
+            {{/if}}
+
+            <span class="presence {{presenceClass}}" title="{{presenceLabel}}">
+              <i class="fas fa-circle" aria-hidden="true"></i>
+            </span>
+          </header>
+
+          {{#if hasOtherActors}}
+            <div class="other-actors" data-other-actors hidden>
+              {{#each otherActors}}
+                <label class="actor-option">
+                  <input
+                    type="checkbox"
+                    name="actorIds"
+                    value="{{actorId}}"
+                    data-actor-toggle
+                    data-actor-id="{{actorId}}"
+                    data-actor-name="{{actorName}}"
+                    data-primary="false"
+                    data-selected="false"
+                  />
+                  <span>{{actorName}}</span>
+                  {{#if shared}}<span
+                      class="tag tag--warning"
+                    >Shared</span>{{/if}}
+                </label>
+              {{/each}}
+            </div>
+          {{/if}}
+        </article>
+      {{else}}
+        <p class="empty-players">No player accounts exist in this world.</p>
+      {{/each}}
+    </section>
+
+    <footer class="payout-footer">
+      <span data-selection-summary></span>
+      <button type="button" class="wizard-button" data-next-step>Next
+        <i class="fas fa-chevron-right"></i></button>
+    </footer>
   </section>
 
-  <footer class="payout-footer">
-    <span data-selection-summary></span>
-    <span class="next-step"><i class="fas fa-info-circle"></i>
-      Reward fields are added next.</span>
-  </footer>
+  <section data-step-panel="rewards" hidden>
+    <header class="reward-heading">
+      <div>
+        <span class="eyebrow">Session</span>
+        <strong data-session-summary></strong>
+      </div>
+      <div class="recipient-summary">
+        <span class="eyebrow">Recipients</span>
+        <ul data-recipient-list></ul>
+      </div>
+    </header>
+
+    <fieldset class="group-rewards">
+      <legend>Group payout</legend>
+      <p>Each selected Actor receives these amounts.</p>
+
+      <div class="reward-grid">
+        <label>
+          <span><i class="fas fa-coins"></i> Money</span>
+          <input type="number" name="groupMoney" value="0" step="1" />
+        </label>
+        <label>
+          <span><i class="fas fa-graduation-cap"></i> IP</span>
+          <input type="number" name="groupIp" value="0" step="1" />
+        </label>
+        <label>
+          <span><i class="fas fa-heart"></i> Humanity Gain</span>
+          <input
+            type="number"
+            name="groupHumanityGain"
+            value="0"
+            min="0"
+            step="1"
+          />
+        </label>
+        <label>
+          <span><i class="fas fa-heart-crack"></i> Humanity Loss</span>
+          <input
+            type="number"
+            name="groupHumanityLoss"
+            value="0"
+            min="0"
+            step="1"
+          />
+        </label>
+      </div>
+    </fieldset>
+
+    <footer class="payout-footer">
+      <button type="button" class="wizard-button" data-previous-step><i
+          class="fas fa-chevron-left"
+        ></i>
+        Back</button>
+      <button type="button" class="wizard-button" disabled title="Coming next">
+        Preview payout
+        <i class="fas fa-magnifying-glass"></i>
+      </button>
+    </footer>
+  </section>
 </form>

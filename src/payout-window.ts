@@ -100,6 +100,13 @@ export class PayoutWindow extends FormApplication {
         button.addEventListener("click", () => this.#toggleOtherActors(button)),
       );
 
+    root
+      .querySelector<HTMLButtonElement>("[data-next-step]")
+      ?.addEventListener("click", () => this.#goToRewards(root));
+    root
+      .querySelector<HTMLButtonElement>("[data-previous-step]")
+      ?.addEventListener("click", () => this.#showStep(root, "participants"));
+
     this.#updateSelectionSummary(root);
   }
 
@@ -169,6 +176,67 @@ export class PayoutWindow extends FormApplication {
       ? "Show other actors"
       : "Hide other actors";
     button.setAttribute("aria-expanded", String(!otherActors.hidden));
+  }
+
+  #goToRewards(root: HTMLElement): void {
+    const sessionLabel = root.querySelector<HTMLInputElement>(
+      '[name="sessionLabel"]',
+    );
+    const selectedActors = Array.from(
+      root.querySelectorAll<HTMLInputElement>(
+        "[data-actor-toggle]:checked:not(:disabled)",
+      ),
+    );
+    const selectedPlayers = root.querySelectorAll(
+      "[data-user-toggle]:checked",
+    ).length;
+
+    if (!sessionLabel?.value.trim()) {
+      ui.notifications.warn("Enter a session label before continuing.");
+      sessionLabel?.focus();
+      return;
+    }
+
+    if (selectedPlayers === 0 || selectedActors.length === 0) {
+      ui.notifications.warn(
+        "Select at least one player and one Actor before continuing.",
+      );
+      return;
+    }
+
+    const sessionSummary = root.querySelector<HTMLElement>(
+      "[data-session-summary]",
+    );
+    if (sessionSummary) sessionSummary.textContent = sessionLabel.value.trim();
+
+    const recipients = root.querySelector<HTMLUListElement>(
+      "[data-recipient-list]",
+    );
+    if (recipients) {
+      recipients.replaceChildren(
+        ...selectedActors.map((actor) => {
+          const item = document.createElement("li");
+          item.textContent = actor.dataset.actorName ?? actor.value;
+          return item;
+        }),
+      );
+    }
+
+    this.#showStep(root, "rewards");
+  }
+
+  #showStep(root: HTMLElement, step: "participants" | "rewards"): void {
+    root.querySelectorAll<HTMLElement>("[data-step-panel]").forEach((panel) => {
+      panel.hidden = panel.dataset.stepPanel !== step;
+    });
+    root
+      .querySelectorAll<HTMLElement>("[data-step-indicator]")
+      .forEach((indicator) => {
+        indicator.classList.toggle(
+          "wizard-step--active",
+          indicator.dataset.stepIndicator === step,
+        );
+      });
   }
 
   #deduplicateActor(root: HTMLElement, selected: HTMLInputElement): void {

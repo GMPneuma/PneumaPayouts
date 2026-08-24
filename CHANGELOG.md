@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.3 - 2026-08-23
+
+- Added a two-step Participants → Rewards wizard.
+- Added validation for the session label and selected recipients.
+- Added Back/Next navigation that preserves participant choices.
+- Added the group payout UI for Money, IP, Humanity Gain, and Humanity Loss.
+
 ## 0.1.2 - 2026-08-23
 
 - Styled the payout scene-control icon gold for easier identification.
