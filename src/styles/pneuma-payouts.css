@@ -3,6 +3,13 @@
   box-sizing: border-box;
 }
 
+#controls [data-tool="pneuma-payouts"] i {
+  color: #ffd24a;
+  text-shadow:
+    0 0 3px #7a4700,
+    0 0 7px #ffb000;
+}
+
 .pneuma-payouts .window-content {
   padding: 0;
 }
@@ -11,33 +18,33 @@
   display: flex;
   max-height: 75vh;
   flex-direction: column;
-  gap: 0.75rem;
-  padding: 1rem;
+  gap: 0.45rem;
+  padding: 0.65rem;
 }
 
 .pneuma-payouts .payout-heading p {
-  margin: 0 0 0.75rem;
+  margin: 0 0 0.4rem;
 }
 
 .pneuma-payouts .payout-metadata {
   display: grid;
   grid-template-columns: minmax(12rem, 1fr) minmax(16rem, 2fr);
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
 .pneuma-payouts .payout-metadata label {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.15rem;
   font-weight: 600;
 }
 
 .pneuma-payouts .participant-list {
   display: flex;
-  min-height: 10rem;
+  min-height: 6rem;
   flex: 1;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.25rem;
   overflow-y: auto;
   padding-right: 0.25rem;
 }
@@ -45,7 +52,7 @@
 .pneuma-payouts .participant {
   border: 1px solid var(--color-border-light-primary, #777);
   border-radius: 4px;
-  padding: 0.6rem 0.75rem;
+  padding: 0.3rem 0.45rem;
 }
 
 .pneuma-payouts .participant--ineligible {
@@ -57,7 +64,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.5rem;
 }
 
 .pneuma-payouts .participant-toggle,
@@ -65,6 +72,15 @@
   display: flex;
   align-items: center;
   gap: 0.4rem;
+}
+
+.pneuma-payouts .participant-toggle {
+  min-width: 9rem;
+}
+
+.pneuma-payouts .actor-option--default {
+  min-width: 12rem;
+  flex: 1;
 }
 
 .pneuma-payouts .presence {
@@ -80,11 +96,26 @@
   color: #278b42;
 }
 
-.pneuma-payouts .actor-options {
+.pneuma-payouts .other-actors {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
-  gap: 0.35rem 0.75rem;
-  margin: 0.5rem 0 0 1.5rem;
+  gap: 0.2rem 0.5rem;
+  margin: 0.3rem 0 0 9.5rem;
+  border-top: 1px dotted var(--color-border-light-primary, #777);
+  padding-top: 0.3rem;
+}
+
+.pneuma-payouts .other-actors[hidden] {
+  display: none;
+}
+
+.pneuma-payouts .show-other-actors {
+  width: auto;
+  min-width: 7.5rem;
+  margin: 0;
+  padding: 0.15rem 0.4rem;
+  font-size: 0.75rem;
+  line-height: 1.2;
 }
 
 .pneuma-payouts .tag {
@@ -96,26 +127,20 @@
   line-height: 1.2;
 }
 
-.pneuma-payouts .tag--warning,
-.pneuma-payouts .participant-warnings {
+.pneuma-payouts .tag--warning {
   color: var(--color-level-warning, #b26b00);
-}
-
-.pneuma-payouts .participant-warnings {
-  margin: 0.45rem 0 0 1.5rem;
-  padding-left: 1rem;
-  font-size: 0.8rem;
 }
 
 .pneuma-payouts .empty-actors,
 .pneuma-payouts .empty-players {
-  margin: 0.5rem 0 0 1.5rem;
+  margin: 0;
   font-style: italic;
+  font-size: 0.8rem;
 }
 
 .pneuma-payouts .payout-footer {
   border-top: 1px solid var(--color-border-light-primary, #777);
-  padding-top: 0.75rem;
+  padding-top: 0.4rem;
 }
 
 .pneuma-payouts .next-step {

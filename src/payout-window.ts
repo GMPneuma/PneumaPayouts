@@ -8,7 +8,7 @@ import {
 interface ActorOptionView {
   actorId: string;
   actorName: string;
-  assigned: boolean;
+  primary: boolean;
   selected: boolean;
   shared: boolean;
 }
@@ -22,8 +22,10 @@ interface PlayerView {
   selected: boolean;
   eligible: boolean;
   eligibilityClass: string;
-  actors: ActorOptionView[];
-  warnings: string[];
+  defaultActor: ActorOptionView | null;
+  otherActors: ActorOptionView[];
+  hasOtherActors: boolean;
+  warningText: string;
 }
 
 interface PayoutWindowData {
@@ -92,6 +94,12 @@ export class PayoutWindow extends FormApplication {
         }),
       );
 
+    root
+      .querySelectorAll<HTMLButtonElement>("[data-show-other-actors]")
+      .forEach((button) =>
+        button.addEventListener("click", () => this.#toggleOtherActors(button)),
+      );
+
     this.#updateSelectionSummary(root);
   }
 
@@ -119,6 +127,16 @@ export class PayoutWindow extends FormApplication {
           row?.querySelector<HTMLInputElement>("[data-user-toggle]");
         actorToggle.disabled = !userToggle?.checked;
       });
+
+    const selectedActorIds = new Set<string>();
+    root
+      .querySelectorAll<HTMLInputElement>("[data-actor-toggle]:checked")
+      .forEach((actorToggle) => {
+        const actorId = actorToggle.dataset.actorId;
+        if (!actorId) return;
+        if (selectedActorIds.has(actorId)) actorToggle.checked = false;
+        else selectedActorIds.add(actorId);
+      });
   }
 
   #syncUserRow(userToggle: HTMLInputElement): void {
@@ -135,10 +153,22 @@ export class PayoutWindow extends FormApplication {
 
     if (userToggle.checked && !actorToggles.some(({ checked }) => checked)) {
       const defaultActor =
-        actorToggles.find((actor) => actor.dataset.assigned === "true") ??
+        actorToggles.find((actor) => actor.dataset.primary === "true") ??
         actorToggles[0];
       if (defaultActor) defaultActor.checked = true;
     }
+  }
+
+  #toggleOtherActors(button: HTMLButtonElement): void {
+    const row = button.closest<HTMLElement>("[data-player-row]");
+    const otherActors = row?.querySelector<HTMLElement>("[data-other-actors]");
+    if (!otherActors) return;
+
+    otherActors.hidden = !otherActors.hidden;
+    button.textContent = otherActors.hidden
+      ? "Show other actors"
+      : "Hide other actors";
+    button.setAttribute("aria-expanded", String(!otherActors.hidden));
   }
 
   #deduplicateActor(root: HTMLElement, selected: HTMLInputElement): void {
@@ -177,9 +207,19 @@ export class PayoutWindow extends FormApplication {
 }
 
 function toPlayerView(account: PlayerAccount): PlayerView {
-  const selected = account.active && account.eligible;
+  const selected = account.eligible;
   const defaultActor =
     account.actors.find(({ assigned }) => assigned) ?? account.actors[0];
+  const actorViews = account.actors.map((actor) => ({
+    actorId: actor.actorId,
+    actorName: actor.actorName,
+    primary: actor.actorId === defaultActor?.actorId,
+    selected: actor.actorId === defaultActor?.actorId,
+    shared: actor.sharedWithUserIds.length > 0,
+  }));
+  const primaryActor =
+    actorViews.find(({ actorId }) => actorId === defaultActor?.actorId) ?? null;
+  const otherActors = actorViews.filter(({ primary }) => !primary);
 
   return {
     userId: account.userId,
@@ -190,13 +230,9 @@ function toPlayerView(account: PlayerAccount): PlayerView {
     selected,
     eligible: account.eligible,
     eligibilityClass: account.eligible ? "" : "participant--ineligible",
-    actors: account.actors.map((actor) => ({
-      actorId: actor.actorId,
-      actorName: actor.actorName,
-      assigned: actor.assigned,
-      selected: selected && actor.actorId === defaultActor?.actorId,
-      shared: actor.sharedWithUserIds.length > 0,
-    })),
-    warnings: account.issues.map((issue) => ISSUE_LABELS[issue]),
+    defaultActor: primaryActor,
+    otherActors,
+    hasOtherActors: otherActors.length > 0,
+    warningText: account.issues.map((issue) => ISSUE_LABELS[issue]).join(" "),
   };
 }

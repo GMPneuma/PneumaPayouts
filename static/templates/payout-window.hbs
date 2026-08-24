@@ -44,15 +44,43 @@
             <strong>{{userName}}</strong>
           </label>
 
-          <span class="presence {{presenceClass}}">
+          {{#if defaultActor}}
+            <label class="actor-option actor-option--default">
+              <input
+                type="checkbox"
+                name="actorIds"
+                value="{{defaultActor.actorId}}"
+                data-actor-toggle
+                data-actor-id="{{defaultActor.actorId}}"
+                data-primary="true"
+                data-selected="true"
+              />
+              <span>{{defaultActor.actorName}}</span>
+              {{#if defaultActor.shared}}<span
+                  class="tag tag--warning"
+                >Shared</span>{{/if}}
+            </label>
+          {{else}}
+            <span class="empty-actors" title="{{warningText}}">No eligible Actor</span>
+          {{/if}}
+
+          {{#if hasOtherActors}}
+            <button
+              type="button"
+              class="show-other-actors"
+              data-show-other-actors
+              aria-expanded="false"
+            >Show other actors</button>
+          {{/if}}
+
+          <span class="presence {{presenceClass}}" title="{{presenceLabel}}">
             <i class="fas fa-circle" aria-hidden="true"></i>
-            {{presenceLabel}}
           </span>
         </header>
 
-        {{#if actors.length}}
-          <div class="actor-options">
-            {{#each actors}}
+        {{#if hasOtherActors}}
+          <div class="other-actors" data-other-actors hidden>
+            {{#each otherActors}}
               <label class="actor-option">
                 <input
                   type="checkbox"
@@ -60,25 +88,16 @@
                   value="{{actorId}}"
                   data-actor-toggle
                   data-actor-id="{{actorId}}"
-                  data-assigned="{{assigned}}"
-                  data-selected="{{selected}}"
+                  data-primary="false"
+                  data-selected="false"
                 />
                 <span>{{actorName}}</span>
-                {{#if assigned}}<span class="tag">Default</span>{{/if}}
                 {{#if shared}}<span
                     class="tag tag--warning"
                   >Shared</span>{{/if}}
               </label>
             {{/each}}
           </div>
-        {{else}}
-          <p class="empty-actors">No eligible character Actors.</p>
-        {{/if}}
-
-        {{#if warnings.length}}
-          <ul class="participant-warnings">
-            {{#each warnings}}<li>{{this}}</li>{{/each}}
-          </ul>
         {{/if}}
       </article>
     {{else}}
