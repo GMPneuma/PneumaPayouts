@@ -50,7 +50,7 @@ export class PayoutWindow extends FormApplication {
       classes: [...(super.defaultOptions.classes ?? []), MODULE_ID],
       title: "Pneuma's Payouts",
       template: `modules/${MODULE_ID}/templates/payout-window.hbs`,
-      width: 720,
+      width: 1100,
       height: "auto",
       resizable: true,
       closeOnSubmit: false,
@@ -229,7 +229,59 @@ export class PayoutWindow extends FormApplication {
       );
     }
 
+    this.#populateIndividualPayouts(root, selectedActors);
+
     this.#showStep(root, "rewards");
+  }
+
+  #populateIndividualPayouts(
+    root: HTMLElement,
+    selectedActors: HTMLInputElement[],
+  ): void {
+    const container = root.querySelector<HTMLElement>(
+      "[data-individual-payouts]",
+    );
+    const template = root.querySelector<HTMLTemplateElement>(
+      "[data-individual-row-template]",
+    );
+    if (!container || !template) return;
+
+    const existingRows = new Map(
+      Array.from(
+        container.querySelectorAll<HTMLElement>("[data-individual-row]"),
+      ).map((row) => [row.dataset.actorId, row]),
+    );
+
+    const rows = selectedActors.flatMap((actor) => {
+      const actorId = actor.dataset.actorId;
+      if (!actorId) return [];
+
+      const existing = existingRows.get(actorId);
+      if (existing) return [existing];
+
+      const row = template.content.firstElementChild?.cloneNode(
+        true,
+      ) as HTMLElement | null;
+      if (!row) return [];
+
+      row.dataset.actorId = actorId;
+      const actorName = actor.dataset.actorName ?? actorId;
+      const heading = row.querySelector<HTMLElement>(
+        "[data-individual-actor-name]",
+      );
+      if (heading) heading.textContent = actorName;
+
+      row
+        .querySelectorAll<HTMLInputElement>("[data-individual-field]")
+        .forEach((input) => {
+          const field = input.dataset.individualField;
+          if (field) input.name = `individual.${actorId}.${field}`;
+        });
+
+      return [row];
+    });
+
+    container.replaceChildren(...rows);
   }
 
   #showStep(root: HTMLElement, step: "participants" | "rewards"): void {

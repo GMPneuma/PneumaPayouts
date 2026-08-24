@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.5 - 2026-08-24
+
+- Added a horizontal individual-payout row for every selected recipient.
+- Added individual Money, IP, Humanity Gain, Humanity Loss, and New Reputation.
+- Added reason fields for IP, Humanity changes, and Reputation.
+- Preserved individual entries when navigating Back and returning to Rewards.
+
 ## 0.1.4 - 2026-08-24
 
 - Split the Rewards screen vertically into session/recipients and payout fields.

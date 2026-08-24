@@ -212,6 +212,112 @@
       </fieldset>
     </div>
 
+    <section class="individual-rewards">
+      <header>
+        <div>
+          <h3>Individual payouts</h3>
+          <p>Additional rewards applied only to the named recipient.</p>
+        </div>
+      </header>
+
+      <div class="individual-payouts" data-individual-payouts></div>
+
+      <template data-individual-row-template>
+        <article class="individual-row" data-individual-row>
+          <strong data-individual-actor-name></strong>
+
+          <label class="individual-field individual-field--money">
+            <span>Money</span>
+            <input
+              type="number"
+              value="0"
+              step="1"
+              data-individual-field="money"
+            />
+          </label>
+
+          <label class="individual-field">
+            <span>IP</span>
+            <span class="amount-reason">
+              <input
+                type="number"
+                value="0"
+                step="1"
+                aria-label="IP amount"
+                data-individual-field="ip"
+              />
+              <input
+                type="text"
+                placeholder="Reason"
+                aria-label="IP reason"
+                data-individual-field="ipReason"
+              />
+            </span>
+          </label>
+
+          <label class="individual-field">
+            <span>Humanity Gain</span>
+            <span class="amount-reason">
+              <input
+                type="number"
+                value="0"
+                min="0"
+                step="1"
+                aria-label="Humanity Gain amount"
+                data-individual-field="humanityGain"
+              />
+              <input
+                type="text"
+                placeholder="Reason"
+                aria-label="Humanity Gain reason"
+                data-individual-field="humanityGainReason"
+              />
+            </span>
+          </label>
+
+          <label class="individual-field">
+            <span>Humanity Loss</span>
+            <span class="amount-reason">
+              <input
+                type="number"
+                value="0"
+                min="0"
+                step="1"
+                aria-label="Humanity Loss amount"
+                data-individual-field="humanityLoss"
+              />
+              <input
+                type="text"
+                placeholder="Reason"
+                aria-label="Humanity Loss reason"
+                data-individual-field="humanityLossReason"
+              />
+            </span>
+          </label>
+
+          <label class="individual-field">
+            <span>New Reputation</span>
+            <span class="amount-reason">
+              <input
+                type="number"
+                min="0"
+                step="1"
+                placeholder="—"
+                aria-label="New Reputation value"
+                data-individual-field="reputation"
+              />
+              <input
+                type="text"
+                placeholder="Reason"
+                aria-label="Reputation reason"
+                data-individual-field="reputationReason"
+              />
+            </span>
+          </label>
+        </article>
+      </template>
+    </section>
+
     <footer class="payout-footer">
       <button type="button" class="wizard-button" data-previous-step><i
           class="fas fa-chevron-left"

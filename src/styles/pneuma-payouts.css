@@ -203,6 +203,79 @@
   text-align: right;
 }
 
+.pneuma-payouts .individual-rewards {
+  border-top: 1px solid var(--color-border-light-primary, #777);
+  padding-top: 0.5rem;
+}
+
+.pneuma-payouts .individual-rewards header,
+.pneuma-payouts .individual-rewards h3,
+.pneuma-payouts .individual-rewards p {
+  margin: 0;
+}
+
+.pneuma-payouts .individual-rewards header {
+  margin-bottom: 0.4rem;
+}
+
+.pneuma-payouts .individual-rewards p {
+  color: var(--color-text-dark-secondary, #777);
+  font-size: 0.75rem;
+}
+
+.pneuma-payouts .individual-payouts {
+  display: flex;
+  max-height: 16rem;
+  flex-direction: column;
+  gap: 0.3rem;
+  overflow-y: auto;
+}
+
+.pneuma-payouts .individual-row {
+  display: grid;
+  grid-template-columns:
+    minmax(7rem, 0.8fr)
+    minmax(4rem, 0.55fr)
+    repeat(4, minmax(9rem, 1.3fr));
+  align-items: end;
+  gap: 0.45rem;
+  border: 1px solid var(--color-border-light-primary, #777);
+  border-radius: 3px;
+  padding: 0.35rem 0.45rem;
+}
+
+.pneuma-payouts .individual-row > strong {
+  align-self: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pneuma-payouts .individual-field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.pneuma-payouts .individual-field input {
+  min-width: 0;
+  height: 1.65rem;
+}
+
+.pneuma-payouts .individual-field--money input,
+.pneuma-payouts .amount-reason input:first-child {
+  text-align: right;
+}
+
+.pneuma-payouts .amount-reason {
+  display: grid;
+  grid-template-columns: 3.5rem minmax(4rem, 1fr);
+  gap: 0.25rem;
+}
+
 .pneuma-payouts .participant-toggle,
 .pneuma-payouts .actor-option {
   display: flex;
