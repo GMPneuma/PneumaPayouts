@@ -1,0 +1,26 @@
+{
+  "id": "pneuma-payouts",
+  "title": "Pneuma's Payouts",
+  "description": "A TypeScript module for Foundry Virtual Tabletop.",
+  "version": "0.1.0",
+  "authors": [
+    {
+      "name": "Pneuma"
+    }
+  ],
+  "compatibility": {
+    "minimum": "12",
+    "verified": "12",
+    "maximum": "12"
+  },
+  "relationships": {
+    "systems": [
+      {
+        "id": "cyberpunk-red-core",
+        "type": "system"
+      }
+    ]
+  },
+  "esmodules": ["scripts/pneuma-payouts.js"],
+  "styles": ["styles/pneuma-payouts.css"]
+}
