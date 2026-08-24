@@ -2,3 +2,123 @@
 .pneuma-payouts {
   box-sizing: border-box;
 }
+
+.pneuma-payouts .window-content {
+  padding: 0;
+}
+
+.pneuma-payouts .payout-form {
+  display: flex;
+  max-height: 75vh;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+}
+
+.pneuma-payouts .payout-heading p {
+  margin: 0 0 0.75rem;
+}
+
+.pneuma-payouts .payout-metadata {
+  display: grid;
+  grid-template-columns: minmax(12rem, 1fr) minmax(16rem, 2fr);
+  gap: 0.75rem;
+}
+
+.pneuma-payouts .payout-metadata label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-weight: 600;
+}
+
+.pneuma-payouts .participant-list {
+  display: flex;
+  min-height: 10rem;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.5rem;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.pneuma-payouts .participant {
+  border: 1px solid var(--color-border-light-primary, #777);
+  border-radius: 4px;
+  padding: 0.6rem 0.75rem;
+}
+
+.pneuma-payouts .participant--ineligible {
+  opacity: 0.65;
+}
+
+.pneuma-payouts .participant-header,
+.pneuma-payouts .payout-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.pneuma-payouts .participant-toggle,
+.pneuma-payouts .actor-option {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.pneuma-payouts .presence {
+  color: var(--color-text-dark-secondary, #777);
+  font-size: 0.8rem;
+}
+
+.pneuma-payouts .presence i {
+  font-size: 0.55rem;
+}
+
+.pneuma-payouts .presence--active {
+  color: #278b42;
+}
+
+.pneuma-payouts .actor-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 0.35rem 0.75rem;
+  margin: 0.5rem 0 0 1.5rem;
+}
+
+.pneuma-payouts .tag {
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  padding: 0.05rem 0.35rem;
+  color: var(--color-text-dark-secondary, #666);
+  font-size: 0.7rem;
+  line-height: 1.2;
+}
+
+.pneuma-payouts .tag--warning,
+.pneuma-payouts .participant-warnings {
+  color: var(--color-level-warning, #b26b00);
+}
+
+.pneuma-payouts .participant-warnings {
+  margin: 0.45rem 0 0 1.5rem;
+  padding-left: 1rem;
+  font-size: 0.8rem;
+}
+
+.pneuma-payouts .empty-actors,
+.pneuma-payouts .empty-players {
+  margin: 0.5rem 0 0 1.5rem;
+  font-style: italic;
+}
+
+.pneuma-payouts .payout-footer {
+  border-top: 1px solid var(--color-border-light-primary, #777);
+  padding-top: 0.75rem;
+}
+
+.pneuma-payouts .next-step {
+  color: var(--color-text-dark-secondary, #666);
+  font-size: 0.8rem;
+}
