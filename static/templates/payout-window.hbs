@@ -127,52 +127,90 @@
   </section>
 
   <section data-step-panel="rewards" hidden>
-    <header class="reward-heading">
-      <div>
-        <span class="eyebrow">Session</span>
-        <strong data-session-summary></strong>
-      </div>
-      <div class="recipient-summary">
-        <span class="eyebrow">Recipients</span>
-        <ul data-recipient-list></ul>
-      </div>
-    </header>
+    <div class="reward-layout">
+      <aside class="reward-context">
+        <section>
+          <span class="eyebrow">Session</span>
+          <strong class="session-name" data-session-summary></strong>
+        </section>
 
-    <fieldset class="group-rewards">
-      <legend>Group payout</legend>
-      <p>Each selected Actor receives these amounts.</p>
+        <section class="recipient-summary">
+          <span class="eyebrow">Recipients</span>
+          <ul data-recipient-list></ul>
+        </section>
+      </aside>
 
-      <div class="reward-grid">
-        <label>
-          <span><i class="fas fa-coins"></i> Money</span>
-          <input type="number" name="groupMoney" value="0" step="1" />
-        </label>
-        <label>
-          <span><i class="fas fa-graduation-cap"></i> IP</span>
-          <input type="number" name="groupIp" value="0" step="1" />
-        </label>
-        <label>
-          <span><i class="fas fa-heart"></i> Humanity Gain</span>
-          <input
-            type="number"
-            name="groupHumanityGain"
-            value="0"
-            min="0"
-            step="1"
-          />
-        </label>
-        <label>
-          <span><i class="fas fa-heart-crack"></i> Humanity Loss</span>
-          <input
-            type="number"
-            name="groupHumanityLoss"
-            value="0"
-            min="0"
-            step="1"
-          />
-        </label>
-      </div>
-    </fieldset>
+      <fieldset class="group-rewards">
+        <legend>Group payout</legend>
+        <p>Each selected Actor receives these amounts.</p>
+
+        <div class="reward-fields">
+          <label class="reward-field">
+            <span><i class="fas fa-coins"></i> Money</span>
+            <input type="number" name="groupMoney" value="0" step="1" />
+          </label>
+
+          <label class="reward-field">
+            <span><i class="fas fa-graduation-cap"></i> IP</span>
+            <input type="number" name="groupIp" value="0" step="1" />
+          </label>
+
+          <div class="reward-field" data-humanity-field>
+            <span><i class="fas fa-heart"></i> Humanity Gain</span>
+            <div class="humanity-inputs">
+              <input
+                type="number"
+                name="groupHumanityGainManual"
+                value="0"
+                min="0"
+                step="1"
+                aria-label="Manual Humanity Gain"
+                data-humanity-manual
+              />
+              <span>or</span>
+              <select
+                name="groupHumanityGainDice"
+                aria-label="Humanity Gain dice"
+                data-humanity-mode
+              >
+                <option value="manual">Manual</option>
+                <option value="1d6">1d6</option>
+                <option value="2d6">2d6</option>
+                <option value="3d6">3d6</option>
+                <option value="4d6">4d6</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="reward-field" data-humanity-field>
+            <span><i class="fas fa-heart-crack"></i> Humanity Loss</span>
+            <div class="humanity-inputs">
+              <input
+                type="number"
+                name="groupHumanityLossManual"
+                value="0"
+                min="0"
+                step="1"
+                aria-label="Manual Humanity Loss"
+                data-humanity-manual
+              />
+              <span>or</span>
+              <select
+                name="groupHumanityLossDice"
+                aria-label="Humanity Loss dice"
+                data-humanity-mode
+              >
+                <option value="manual">Manual</option>
+                <option value="1d6">1d6</option>
+                <option value="2d6">2d6</option>
+                <option value="3d6">3d6</option>
+                <option value="4d6">4d6</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </fieldset>
+    </div>
 
     <footer class="payout-footer">
       <button type="button" class="wizard-button" data-previous-step><i

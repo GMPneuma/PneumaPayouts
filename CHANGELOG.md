@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.4 - 2026-08-24
+
+- Split the Rewards screen vertically into session/recipients and payout fields.
+- Changed recipients to a compact vertical list.
+- Stacked Money, IP, Humanity Gain, and Humanity Loss vertically.
+- Added manual or 1d6–4d6 modes for Humanity Gain and Humanity Loss.
+
 ## 0.1.3 - 2026-08-23
 
 - Added a two-step Participants → Rewards wizard.

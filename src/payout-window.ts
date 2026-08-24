@@ -107,6 +107,13 @@ export class PayoutWindow extends FormApplication {
       .querySelector<HTMLButtonElement>("[data-previous-step]")
       ?.addEventListener("click", () => this.#showStep(root, "participants"));
 
+    root
+      .querySelectorAll<HTMLSelectElement>("[data-humanity-mode]")
+      .forEach((select) => {
+        this.#syncHumanityMode(select);
+        select.addEventListener("change", () => this.#syncHumanityMode(select));
+      });
+
     this.#updateSelectionSummary(root);
   }
 
@@ -237,6 +244,16 @@ export class PayoutWindow extends FormApplication {
           indicator.dataset.stepIndicator === step,
         );
       });
+  }
+
+  #syncHumanityMode(select: HTMLSelectElement): void {
+    const field = select.closest<HTMLElement>("[data-humanity-field]");
+    const manualInput = field?.querySelector<HTMLInputElement>(
+      "[data-humanity-manual]",
+    );
+    if (!manualInput) return;
+
+    manualInput.disabled = select.value !== "manual";
   }
 
   #deduplicateActor(root: HTMLElement, selected: HTMLInputElement): void {
