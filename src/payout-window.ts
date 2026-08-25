@@ -96,6 +96,8 @@ export class PayoutWindow extends FormApplication {
     const root = html[0];
     if (!root) return;
 
+    root.addEventListener("click", (event) => this.#openActorLink(event));
+
     this.#initializeSelection(root);
     root
       .querySelector<HTMLInputElement>('[name="inGameDate"]')
@@ -296,9 +298,7 @@ export class PayoutWindow extends FormApplication {
 
     const recipients = root.querySelector<HTMLElement>("[data-recipient-list]");
     if (recipients)
-      recipients.textContent = selectedActors
-        .map((actor) => actor.dataset.actorName ?? actor.value)
-        .join(", ");
+      recipients.replaceChildren(...this.#actorLinkList(selectedActors));
 
     this.#populateIndividualPayouts(root, selectedActors);
 
@@ -340,7 +340,8 @@ export class PayoutWindow extends FormApplication {
       const heading = row.querySelector<HTMLElement>(
         "[data-individual-actor-name]",
       );
-      if (heading) heading.textContent = actorName;
+      if (heading)
+        heading.replaceChildren(this.#createActorLink(actorId, actorName));
 
       return [row];
     });
@@ -475,13 +476,9 @@ export class PayoutWindow extends FormApplication {
     );
 
     this.#setText(root, "[data-preview-session]", sessionLabel?.value.trim());
-    this.#setText(
-      root,
-      "[data-preview-recipients]",
-      selectedActors
-        .map((actor) => actor.dataset.actorName ?? actor.value)
-        .join(", "),
-    );
+    root
+      .querySelector<HTMLElement>("[data-preview-recipients]")
+      ?.replaceChildren(...this.#actorLinkList(selectedActors));
     this.#setText(root, "[data-preview-notes]", notes?.value.trim() || "None");
     this.#setText(root, "[data-preview-in-game-date]", this.#plan.inGameDate);
 
@@ -513,7 +510,7 @@ export class PayoutWindow extends FormApplication {
       groupList.replaceChildren(...items);
       groupList.classList.toggle("preview-list--empty", items.length === 0);
       if (items.length === 0)
-        groupList.textContent = "No group payouts entered.";
+        groupList.textContent = "No primary payouts entered.";
     }
 
     const individualPreview = root.querySelector<HTMLElement>(
@@ -530,7 +527,7 @@ export class PayoutWindow extends FormApplication {
         const heading = document.createElement("strong");
         const icon = document.createElement("i");
         icon.className = "fas fa-user";
-        heading.append(icon, ` ${actor.name}`);
+        heading.append(icon, " ", this.#createActorLink(actor.id, actor.name));
         const list = document.createElement("ul");
         list.className = "preview-list";
         list.append(
@@ -768,7 +765,7 @@ export class PayoutWindow extends FormApplication {
     )
       throw new Error(`${this.#rewardLabel(reward)} cannot exceed 99.`);
     if (reward === "reputation" && amount < 0)
-      throw new Error("New Reputation cannot be negative.");
+      throw new Error("Reputation cannot be negative.");
     const faction = entry
       .querySelector<HTMLInputElement>("[data-entry-faction]")
       ?.value.trim();
@@ -781,10 +778,7 @@ export class PayoutWindow extends FormApplication {
       formula,
       faction,
       setValue: reward === "reputation",
-      description:
-        entry.querySelector<HTMLInputElement>(
-          '[data-entry-field="description"], [data-additional-field="description"]',
-        )?.value ?? "",
+      description: this.#entryDescription(entry),
     };
   }
 
@@ -859,8 +853,6 @@ export class PayoutWindow extends FormApplication {
     const type = entry.querySelector<HTMLSelectElement>("[data-entry-type]");
     const amount = entry.querySelector<HTMLInputElement>("[data-entry-amount]");
     const mode = entry.querySelector<HTMLSelectElement>("[data-entry-mode]");
-    const description =
-      entry.querySelector<HTMLInputElement>('input[type="text"]');
     const amountText =
       mode && !mode.disabled && mode.value !== "fixed"
         ? mode.value
@@ -868,7 +860,15 @@ export class PayoutWindow extends FormApplication {
     return this.#createPreviewItem(
       type?.selectedOptions[0]?.textContent ?? "Payout",
       amountText,
-      description?.value,
+      this.#entryDescription(entry),
+    );
+  }
+
+  #entryDescription(entry: HTMLElement): string {
+    return (
+      entry.querySelector<HTMLInputElement>(
+        '[data-entry-field="description"], [data-additional-field="description"]',
+      )?.value ?? ""
     );
   }
 
@@ -894,6 +894,45 @@ export class PayoutWindow extends FormApplication {
   #setText(root: HTMLElement, selector: string, value?: string): void {
     const element = root.querySelector<HTMLElement>(selector);
     if (element) element.textContent = value ?? "";
+  }
+
+  #openActorLink(event: Event): void {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    const link = target.closest<HTMLElement>("[data-actor-link]");
+    if (!link) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const actor = link.dataset.actorId
+      ? game.actors.get(link.dataset.actorId)
+      : undefined;
+    if (!actor) {
+      ui.notifications.warn("That Actor could not be found.");
+      return;
+    }
+    actor.sheet?.render(true);
+  }
+
+  #actorLinkList(actors: HTMLInputElement[]): Node[] {
+    return actors.flatMap((actor, index) => {
+      const actorId = actor.dataset.actorId ?? actor.value;
+      const link = this.#createActorLink(
+        actorId,
+        actor.dataset.actorName ?? actor.value,
+      );
+      return index === 0 ? [link] : [document.createTextNode(", "), link];
+    });
+  }
+
+  #createActorLink(actorId: string, actorName: string): HTMLAnchorElement {
+    const link = document.createElement("a");
+    link.className = "actor-sheet-link";
+    link.dataset.actorLink = "";
+    link.dataset.actorId = actorId;
+    link.href = "#";
+    link.textContent = actorName;
+    link.title = `Open ${actorName}`;
+    return link;
   }
 
   #showStep(

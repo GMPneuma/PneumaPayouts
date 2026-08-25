@@ -22,9 +22,7 @@ export interface PayoutAcknowledgment {
 
 interface InboxData {
   pendingRolls: Array<PendingHumanityRoll & { actionLabel: string }>;
-  acknowledgments: Array<
-    PayoutAcknowledgment & { pending: boolean; statusLabel: string }
-  >;
+  acknowledgments: PayoutAcknowledgment[];
   hasItems: boolean;
   isGM: boolean;
 }
@@ -43,8 +41,14 @@ export function registerPayoutInboxSettings(): void {
 }
 
 export function openPayoutInbox(): void {
-  if (!payoutInbox?.rendered) payoutInbox = new PayoutInbox();
-  payoutInbox.render(true);
+  void pruneResolvedAcknowledgments()
+    .catch(() =>
+      ui.notifications.warn("Older Inbox entries could not be cleaned up."),
+    )
+    .finally(() => {
+      if (!payoutInbox?.rendered) payoutInbox = new PayoutInbox();
+      payoutInbox.render(true);
+    });
 }
 
 export function hasInboxItemsForCurrentUser(): boolean {
@@ -74,10 +78,9 @@ export async function createPayoutAcknowledgments(
       if (!user) continue;
       const entries = getAcknowledgments(user);
       snapshots.push({ user, entries });
-      const retainedEntries = [
-        ...entries.filter(({ acknowledgedAt }) => !acknowledgedAt),
-        ...entries.filter(({ acknowledgedAt }) => acknowledgedAt).slice(-50),
-      ];
+      const retainedEntries = entries.filter(
+        ({ acknowledgedAt }) => !acknowledgedAt,
+      );
       await user.update({
         [`flags.${MODULE_ID}.payoutAcknowledgments`]: [
           ...retainedEntries,
@@ -125,14 +128,9 @@ class PayoutInbox extends FormApplication {
       actionLabel:
         roll.reward === "humanityGain" ? "Gain Humanity" : "Lose Humanity",
     }));
-    const acknowledgments = collectAcknowledgments(Boolean(game.user?.isGM))
+    const acknowledgments = collectAcknowledgments()
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-      .slice(0, 100)
-      .map((entry) => ({
-        ...entry,
-        pending: !entry.acknowledgedAt,
-        statusLabel: entry.acknowledgedAt ? "Acknowledged" : "Pending",
-      }));
+      .slice(0, 100);
     return {
       pendingRolls,
       acknowledgments,
@@ -195,10 +193,8 @@ class PayoutInbox extends FormApplication {
     }
     const entries = getAcknowledgments(user);
     await user.update({
-      [`flags.${MODULE_ID}.payoutAcknowledgments`]: entries.map((entry) =>
-        entry.id === acknowledgmentId
-          ? { ...entry, acknowledgedAt: new Date().toISOString() }
-          : entry,
+      [`flags.${MODULE_ID}.payoutAcknowledgments`]: entries.filter(
+        ({ id, acknowledgedAt }) => id !== acknowledgmentId && !acknowledgedAt,
       ),
     });
     ui.notifications.info("Payout acknowledged.");
@@ -214,15 +210,31 @@ function collectPendingRolls(): PendingHumanityRoll[] {
   );
 }
 
-function collectAcknowledgments(
-  includeResolved = false,
-): PayoutAcknowledgment[] {
+function collectAcknowledgments(): PayoutAcknowledgment[] {
   return Array.from(game.users).flatMap((user) => {
     if (!game.user?.isGM && game.user?.id !== user.id) return [];
     return getAcknowledgments(user).filter(
-      ({ acknowledgedAt }) => includeResolved || !acknowledgedAt,
+      ({ acknowledgedAt }) => !acknowledgedAt,
     );
   });
+}
+
+async function pruneResolvedAcknowledgments(): Promise<void> {
+  const users = game.user?.isGM
+    ? Array.from(game.users)
+    : game.user
+      ? [game.user]
+      : [];
+  await Promise.all(
+    users.map(async (user) => {
+      const entries = getAcknowledgments(user);
+      const pending = entries.filter(({ acknowledgedAt }) => !acknowledgedAt);
+      if (pending.length === entries.length) return;
+      await user.update({
+        [`flags.${MODULE_ID}.payoutAcknowledgments`]: pending,
+      });
+    }),
+  );
 }
 
 function getAcknowledgments(user: FoundryUser): PayoutAcknowledgment[] {

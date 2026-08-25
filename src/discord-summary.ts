@@ -153,31 +153,32 @@ export function buildDiscordMarkdown(
 ): string {
   const lines = [`## ${plan.sessionLabel}`, ""];
   if (plan.inGameDate.trim())
-    lines.push(`**In-game date:** ${plan.inGameDate.trim()}`, "");
-  if (plan.notes.trim()) lines.push(plan.notes.trim(), "");
+    lines.push(`**In-Game Date:** ${plan.inGameDate.trim()}`);
+  if (plan.notes.trim()) lines.push(`**Notes:** ${plan.notes.trim()}`);
+  if (plan.inGameDate.trim() || plan.notes.trim()) lines.push("");
+
+  if (plan.hqIpTransactions.length) {
+    lines.push("**Communal Payout**");
+    for (const entry of plan.hqIpTransactions)
+      lines.push(
+        `- **HQ IP:** ${formatAdjustment(entry.amount)}${entry.reason.trim() ? ` — ${entry.reason.trim()}` : ""}`,
+      );
+    lines.push("");
+  }
 
   const groupEntries = plan.actors[0]?.entries.filter(
     ({ scope }) => scope === "group",
   );
   if (groupEntries?.length) {
-    lines.push("**Group awards**");
+    lines.push("**Primary Payout**");
     const crewLink = links[CREW_LINK_KEY];
-    const crewMention = crewLink ? `<@&${crewLink.id}>` : "everyone";
+    const crewMention = crewLink ? `<@&${crewLink.id}>` : "recipient";
     for (const entry of groupEntries) {
       const amount = entry.formula ?? formatAdjustment(entry.amount);
       lines.push(
         `- Each ${crewMention} — **${rewardLabel(entry.reward)}:** ${amount}${entry.description.trim() ? ` — ${entry.description.trim()}` : ""}`,
       );
     }
-    if (!plan.hqIpTransactions.length) lines.push("");
-  }
-
-  if (plan.hqIpTransactions.length) {
-    if (!groupEntries?.length) lines.push("**Group awards**");
-    for (const entry of plan.hqIpTransactions)
-      lines.push(
-        `- **HQ IP:** ${formatAdjustment(entry.amount)}${entry.reason.trim() ? ` — ${entry.reason.trim()}` : ""}`,
-      );
     lines.push("");
   }
 
@@ -254,8 +255,8 @@ function rewardLabel(reward: string): string {
         money: "Money",
         ip: "IP",
         hqIp: "HQ IP",
-        humanityGain: "Humanity Gain",
-        humanityLoss: "Humanity Loss",
+        humanityGain: "Gain Humanity",
+        humanityLoss: "Lose Humanity",
         reputation: "Reputation",
         factionReputation: "Specific Reputation",
       } as Record<string, string>

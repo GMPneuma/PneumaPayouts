@@ -82,6 +82,7 @@ interface FoundryActor {
   name: string;
   type: string;
   system: unknown;
+  sheet?: { render(force?: boolean): unknown };
   testUserPermission(user: FoundryUser, permission: "OWNER"): boolean;
   update(data: Record<string, unknown>): Promise<unknown>;
   getFlag(namespace: string, key: string): unknown;
@@ -165,6 +166,7 @@ declare class Dialog {
 }
 
 interface FoundryJournalPage {
+  id: string;
   name: string;
   text?: { content?: string };
   update(data: Record<string, unknown>): Promise<unknown>;
@@ -178,6 +180,10 @@ interface FoundryJournalEntry {
   createEmbeddedDocuments(
     type: "JournalEntryPage",
     data: object[],
+  ): Promise<FoundryJournalPage[]>;
+  deleteEmbeddedDocuments(
+    type: "JournalEntryPage",
+    ids: string[],
   ): Promise<unknown>;
 }
 

@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.5.0 - 2026-08-25
+
+- Added separate Communal and Primary payout sections, including HQ IP tracking.
+- Added a permanent GM-only Payout Log while keeping player Inboxes limited to
+  pending rolls and acknowledgments.
+- Improved payout descriptions across Preview, Discord, journals, Inbox, and
+  Actor Money/IP transactions; Actor transactions now include the session name.
+- Added actor-sheet links, remembered in-game dates, and attendance Last Session
+  tracking.
+- Improved Discord Markdown structure and Discord user, individual-role, and
+  whole-crew-role mappings.
+- Refined Humanity roll handling, compact amount controls, and payout
+  acknowledgments.
+- Refreshed the native Foundry-style interface with muted red accents and subtle
+  section shading.
+
 ## 0.1.11 - 2026-08-25
 
 - Added group HQ IP payouts with Preview, Discord, ledger, and HQ journal

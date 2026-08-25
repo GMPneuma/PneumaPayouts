@@ -13,6 +13,7 @@ import {
   type PendingHumanityRoll,
 } from "./humanity-prompts";
 import { createPayoutAcknowledgments } from "./payout-inbox";
+import { appendPayoutLog } from "./payout-log";
 import {
   createPayoutRecord,
   type PayoutChange,
@@ -149,6 +150,7 @@ export async function executePayoutPlan(plan: PayoutPlan): Promise<void> {
   const promptMessages: FoundryChatMessage[] = [];
   let rollbackJournal: (() => Promise<void>) | null = null;
   let rollbackAcknowledgments: (() => Promise<void>) | null = null;
+  let rollbackPayoutLog: (() => Promise<void>) | null = null;
   try {
     for (const actorInput of plan.actors) {
       const changes = plan.changes.filter(
@@ -159,6 +161,7 @@ export async function executePayoutPlan(plan: PayoutPlan): Promise<void> {
           actorInput.actor,
           changes,
           pendingRolls.filter(({ actorId }) => actorId === actorInput.actor.id),
+          plan.sessionLabel,
         ),
       );
       const snapshot = snapshots.find(
@@ -173,6 +176,7 @@ export async function executePayoutPlan(plan: PayoutPlan): Promise<void> {
       record.id,
       plan,
     );
+    rollbackPayoutLog = await appendPayoutLog(plan);
     await appendPayoutRecord(record);
   } catch (error) {
     await Promise.allSettled(
@@ -181,6 +185,7 @@ export async function executePayoutPlan(plan: PayoutPlan): Promise<void> {
     if (rollbackJournal) await rollbackJournal().catch(() => undefined);
     if (rollbackAcknowledgments)
       await rollbackAcknowledgments().catch(() => undefined);
+    if (rollbackPayoutLog) await rollbackPayoutLog().catch(() => undefined);
     await Promise.allSettled(promptMessages.map((message) => message.delete()));
     throw error;
   }
@@ -190,6 +195,7 @@ function buildActorUpdate(
   actor: FoundryActor,
   changes: PayoutChange[],
   pendingRolls: PendingHumanityRoll[],
+  sessionLabel: string,
 ): Record<string, unknown> {
   const update: Record<string, unknown> = {
     [`flags.${MODULE_ID}.pendingHumanityRolls`]: [
@@ -215,10 +221,11 @@ function buildActorUpdate(
     )) {
       const description = String(
         related.details?.description ?? "Pneuma payout",
-      );
+      ).trim();
+      const transactionDescription = `${sessionLabel.trim() || "Payout"} - ${description || "No description"}`;
       transactions.push([
         `${related.amount >= 0 ? "Increased" : "Decreased"} ${path} by ${Math.abs(related.amount)} (total ${related.newValue})`,
-        description,
+        transactionDescription,
       ]);
     }
     update[`system.${path}.transactions`] = transactions;

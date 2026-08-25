@@ -42,21 +42,10 @@
               {{/each}}
             </ul>
           </div>
-          {{#if pending}}
-            <button
-              type="button"
-              data-ack-id="{{id}}"
-              data-user-id="{{userId}}"
-            >
-              <i class="fas fa-check"></i>
-              Acknowledge
-            </button>
-          {{else}}
-            <span class="inbox-status inbox-status--done"><i
-                class="fas fa-check-circle"
-              ></i>
-              {{statusLabel}}</span>
-          {{/if}}
+          <button type="button" data-ack-id="{{id}}" data-user-id="{{userId}}">
+            <i class="fas fa-check"></i>
+            Acknowledge
+          </button>
         </article>
       {{/each}}
     </section>

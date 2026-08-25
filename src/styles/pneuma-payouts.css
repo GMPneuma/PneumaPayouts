@@ -1,5 +1,9 @@
 /* Module styles belong under the .pneuma-payouts namespace. */
 .pneuma-payouts {
+  --pneuma-accent: #8f2028;
+  --pneuma-accent-soft: rgba(143, 32, 40, 0.16);
+  --pneuma-panel: rgba(0, 0, 0, 0.055);
+  --pneuma-panel-strong: rgba(0, 0, 0, 0.1);
   box-sizing: border-box;
 }
 
@@ -42,6 +46,9 @@
   justify-content: center;
   gap: 0.6rem;
   border-bottom: 1px solid var(--color-border-light-primary, #777);
+  background: var(--pneuma-panel);
+  border-radius: 3px 3px 0 0;
+  padding-top: 0.25rem;
   padding-bottom: 0.25rem;
 }
 
@@ -60,12 +67,18 @@
 }
 
 .pneuma-payouts .wizard-step--active {
-  color: var(--color-text-hyperlink, #b07800);
+  color: var(--pneuma-accent);
   font-weight: 700;
 }
 
 .pneuma-payouts .payout-heading p {
   margin: 0 0 0.25rem;
+}
+
+.pneuma-payouts .payout-heading {
+  border-radius: 3px;
+  background: var(--pneuma-panel);
+  padding: 0.4rem;
 }
 
 .pneuma-payouts [data-step-panel="participants"] {
@@ -118,6 +131,11 @@
   border: 1px solid var(--color-border-light-primary, #777);
   border-radius: 4px;
   padding: 0.2rem 0.35rem;
+  background: var(--pneuma-panel);
+}
+
+.pneuma-payouts .participant:nth-child(even) {
+  background: var(--pneuma-panel-strong);
 }
 
 .pneuma-payouts .participant--ineligible {
@@ -170,6 +188,7 @@
   border-bottom: 1px solid var(--color-border-light-primary, #777);
   padding: 0.2rem 0.3rem;
   font-size: 0.8rem;
+  background: var(--pneuma-panel);
 }
 
 .pneuma-payouts .reward-summary > span:last-child {
@@ -185,6 +204,15 @@
   border: 1px solid var(--color-border-light-primary, #777);
   border-radius: 4px;
   padding: 0.3rem 0.45rem 0.45rem;
+  background: var(--pneuma-panel);
+}
+
+.pneuma-payouts .communal-payouts {
+  border-left: 3px solid var(--pneuma-accent);
+}
+
+.pneuma-payouts .group-payouts {
+  border-left: 3px solid var(--color-border-highlight, #8c6b20);
 }
 
 .pneuma-payouts .primary-payouts legend,
@@ -193,12 +221,36 @@
   font-weight: 700;
 }
 
+.pneuma-payouts .fieldset-hint {
+  margin: 0 0 0.4rem;
+  color: var(--color-text-dark-secondary, #777);
+  font-size: 0.72rem;
+}
+
+.pneuma-payouts .actor-sheet-link {
+  color: var(--pneuma-accent);
+  cursor: pointer;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.pneuma-payouts .actor-sheet-link:hover {
+  text-decoration: underline;
+  text-shadow: 0 0 4px currentColor;
+}
+
 .pneuma-payouts .primary-payout-row {
   display: grid;
   grid-template-columns: 5.5rem 5rem minmax(8rem, 1fr);
   align-items: center;
   gap: 0.4rem;
   margin-bottom: 0.45rem;
+  border-radius: 3px;
+  padding: 0.15rem;
+}
+
+.pneuma-payouts .primary-payout-row:nth-of-type(even) {
+  background: var(--pneuma-panel);
 }
 
 .pneuma-payouts .primary-payout-row:last-child {
@@ -279,6 +331,11 @@
   border: 1px solid var(--color-border-light-primary, #777);
   border-radius: 3px;
   padding: 0.25rem 0.35rem;
+  background: var(--pneuma-panel);
+}
+
+.pneuma-payouts .individual-row:nth-child(even) {
+  background: var(--pneuma-panel-strong);
 }
 
 .pneuma-payouts .individual-row-header {
@@ -449,7 +506,7 @@
   min-width: 0;
   flex-direction: column;
   gap: 0.1rem;
-  border-left: 3px solid rgba(255, 210, 74, 0.7);
+  border-left: 3px solid var(--pneuma-accent);
   padding-left: 0.4rem;
 }
 
@@ -533,7 +590,7 @@
 }
 
 .pneuma-payouts .preview-item-amount {
-  color: var(--color-text-hyperlink, #b07800);
+  color: var(--pneuma-accent);
   text-align: center;
   white-space: nowrap;
 }
@@ -575,6 +632,19 @@
 .pneuma-payouts .preview-recipient .preview-list {
   margin-top: 0.25rem;
   padding-bottom: 0.25rem;
+}
+
+.pneuma-payouts .preview-recipient .preview-list li {
+  grid-template-columns: minmax(7rem, 0.8fr) minmax(0, 1.4fr);
+  row-gap: 0.1rem;
+}
+
+.pneuma-payouts .preview-recipient .preview-list .preview-item-description {
+  grid-column: 1 / -1;
+  overflow: visible;
+  padding-left: 0.25rem;
+  text-overflow: clip;
+  white-space: normal;
 }
 
 .pneuma-payouts .preview-list--empty {
@@ -656,6 +726,10 @@
   margin: 0 0 0.35rem;
   border-bottom: 1px solid var(--color-border-light-primary, #777);
   padding-bottom: 0.25rem;
+  border-left: 3px solid var(--pneuma-accent);
+  background: var(--pneuma-panel-strong);
+  padding-top: 0.25rem;
+  padding-left: 0.4rem;
 }
 
 .pneuma-payouts .inbox-item {
@@ -667,6 +741,11 @@
   border: 1px solid var(--color-border-light-primary, #777);
   border-radius: 4px;
   padding: 0.4rem 0.5rem;
+  background: var(--pneuma-panel);
+}
+
+.pneuma-payouts .inbox-item:nth-of-type(even) {
+  background: var(--pneuma-panel-strong);
 }
 
 .pneuma-payouts .inbox-item p {
