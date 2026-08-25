@@ -7,6 +7,9 @@
     <i class="fas fa-chevron-right" aria-hidden="true"></i>
     <span class="wizard-step" data-step-indicator="rewards"><b>2</b>
       Rewards</span>
+    <i class="fas fa-chevron-right" aria-hidden="true"></i>
+    <span class="wizard-step" data-step-indicator="preview"><b>3</b>
+      Preview</span>
   </nav>
 
   <section data-step-panel="participants">
@@ -166,19 +169,43 @@
         </button>
 
         <template data-additional-entry-template>
-          <div class="additional-entry" data-additional-entry>
-            <select aria-label="Reward type" data-additional-field="type">
+          <div
+            class="payout-entry additional-entry"
+            data-additional-entry
+            data-payout-entry
+          >
+            <select
+              aria-label="Reward type"
+              data-additional-field="type"
+              data-entry-type
+            >
               <option value="money">Money</option>
               <option value="ip">IP</option>
-              <option value="humanity">Humanity</option>
+              <option value="humanityGain">Gain Humanity</option>
+              <option value="humanityLoss">Lose Humanity</option>
             </select>
             <input
               type="number"
               value="0"
               step="1"
-              aria-label="Adjustment amount"
+              placeholder="Amount"
+              aria-label="Payout amount"
               data-additional-field="amount"
+              data-entry-amount
             />
+            <select
+              aria-label="Humanity amount mode"
+              data-additional-field="mode"
+              data-entry-mode
+              hidden
+              disabled
+            >
+              <option value="fixed">Set amount</option>
+              <option value="1d6">1d6</option>
+              <option value="2d6">2d6</option>
+              <option value="3d6">3d6</option>
+              <option value="4d6">4d6</option>
+            </select>
             <input
               type="text"
               placeholder="Description"
@@ -190,7 +217,7 @@
               class="remove-entry"
               title="Remove entry"
               aria-label="Remove entry"
-              data-remove-additional
+              data-remove-entry
             ><i class="fas fa-trash"></i></button>
           </div>
         </template>
@@ -209,97 +236,67 @@
 
       <template data-individual-row-template>
         <article class="individual-row" data-individual-row>
-          <strong data-individual-actor-name></strong>
-
-          <label class="individual-field individual-field--money">
-            <span>Money</span>
-            <input
-              type="number"
-              value="0"
-              step="1"
-              data-individual-field="money"
-            />
-          </label>
-
-          <label class="individual-field">
-            <span>IP</span>
-            <span class="amount-reason">
-              <input
-                type="number"
-                value="0"
-                step="1"
-                aria-label="IP amount"
-                data-individual-field="ip"
-              />
-              <input
-                type="text"
-                placeholder="Reason"
-                aria-label="IP reason"
-                data-individual-field="ipReason"
-              />
-            </span>
-          </label>
-
-          <label class="individual-field">
-            <span>Humanity Gain</span>
-            <span class="amount-reason">
-              <input
-                type="number"
-                value="0"
-                min="0"
-                step="1"
-                aria-label="Humanity Gain amount"
-                data-individual-field="humanityGain"
-              />
-              <input
-                type="text"
-                placeholder="Reason"
-                aria-label="Humanity Gain reason"
-                data-individual-field="humanityGainReason"
-              />
-            </span>
-          </label>
-
-          <label class="individual-field">
-            <span>Humanity Loss</span>
-            <span class="amount-reason">
-              <input
-                type="number"
-                value="0"
-                min="0"
-                step="1"
-                aria-label="Humanity Loss amount"
-                data-individual-field="humanityLoss"
-              />
-              <input
-                type="text"
-                placeholder="Reason"
-                aria-label="Humanity Loss reason"
-                data-individual-field="humanityLossReason"
-              />
-            </span>
-          </label>
-
-          <label class="individual-field">
-            <span>New Reputation</span>
-            <span class="amount-reason">
-              <input
-                type="number"
-                min="0"
-                step="1"
-                placeholder="—"
-                aria-label="New Reputation value"
-                data-individual-field="reputation"
-              />
-              <input
-                type="text"
-                placeholder="Reason"
-                aria-label="Reputation reason"
-                data-individual-field="reputationReason"
-              />
-            </span>
-          </label>
+          <header class="individual-row-header">
+            <strong data-individual-actor-name></strong>
+            <button type="button" class="add-entry" data-add-individual-entry>
+              <i class="fas fa-plus"></i>
+              Add entry
+            </button>
+          </header>
+          <div class="individual-entry-list" data-individual-entries></div>
         </article>
+      </template>
+
+      <template data-individual-entry-template>
+        <div class="payout-entry individual-entry" data-payout-entry>
+          <select
+            aria-label="Reward type"
+            data-entry-field="type"
+            data-entry-type
+          >
+            <option value="money">Money</option>
+            <option value="ip">IP</option>
+            <option value="humanityGain">Gain Humanity</option>
+            <option value="humanityLoss">Lose Humanity</option>
+            <option value="newReputation">New Reputation</option>
+            <option value="specificReputation">Specific Reputation</option>
+          </select>
+          <input
+            type="number"
+            value="0"
+            step="1"
+            placeholder="Amount"
+            aria-label="Payout amount"
+            data-entry-field="amount"
+            data-entry-amount
+          />
+          <select
+            aria-label="Humanity amount mode"
+            data-entry-field="mode"
+            data-entry-mode
+            hidden
+            disabled
+          >
+            <option value="fixed">Set amount</option>
+            <option value="1d6">1d6</option>
+            <option value="2d6">2d6</option>
+            <option value="3d6">3d6</option>
+            <option value="4d6">4d6</option>
+          </select>
+          <input
+            type="text"
+            placeholder="Reason / description"
+            aria-label="Reason or description"
+            data-entry-field="description"
+          />
+          <button
+            type="button"
+            class="remove-entry"
+            title="Remove entry"
+            aria-label="Remove entry"
+            data-remove-entry
+          ><i class="fas fa-trash"></i></button>
+        </div>
       </template>
     </section>
 
@@ -308,9 +305,51 @@
           class="fas fa-chevron-left"
         ></i>
         Back</button>
-      <button type="button" class="wizard-button" disabled title="Coming next">
+      <button type="button" class="wizard-button" data-preview-step>
         Preview payout
         <i class="fas fa-magnifying-glass"></i>
+      </button>
+    </footer>
+  </section>
+
+  <section data-step-panel="preview" hidden>
+    <header class="preview-heading">
+      <div>
+        <span class="preview-label">Session</span>
+        <strong data-preview-session></strong>
+      </div>
+      <div>
+        <span class="preview-label">Recipients</span>
+        <span data-preview-recipients></span>
+      </div>
+      <div>
+        <span class="preview-label">Notes</span>
+        <span data-preview-notes></span>
+      </div>
+    </header>
+
+    <div class="preview-columns">
+      <section class="preview-section">
+        <h3>Group payouts</h3>
+        <p>Each recipient receives every entry below.</p>
+        <ul class="preview-list" data-preview-group></ul>
+      </section>
+
+      <section class="preview-section">
+        <h3>Individual payouts</h3>
+        <p>These entries apply only to the listed recipient.</p>
+        <div class="preview-individual" data-preview-individual></div>
+      </section>
+    </div>
+
+    <footer class="payout-footer">
+      <button type="button" class="wizard-button" data-preview-back>
+        <i class="fas fa-chevron-left"></i>
+        Back
+      </button>
+      <button type="button" class="wizard-button" data-apply-payout>
+        Apply payout
+        <i class="fas fa-check"></i>
       </button>
     </footer>
   </section>

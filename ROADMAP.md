@@ -26,7 +26,7 @@ and persistence layers.
   - Open from an appropriate Foundry control or settings button.
   - Select attendees and default sensibly from active users.
   - Restrict payout execution to GMs.
-- [ ] **4. Add validation, preview, and transactional execution** — Medium
+- [x] **4. Add validation, preview, and transactional execution** — Medium
   - Show exactly what will change before applying a payout.
   - Reject invalid amounts and missing/unsupported Actors.
   - Avoid partial payouts when an update fails.
@@ -34,17 +34,17 @@ and persistence layers.
 
 ### Milestone 2: Core character payouts
 
-- [ ] **5. Group Money and IP payouts** — Medium
+- [x] **5. Group Money and IP payouts** — Medium
   - Give every selected character the same Money and/or IP adjustment.
   - Support positive, zero, and intentionally negative adjustments where valid.
-- [ ] **6. Group Humanity Gain and Humanity Loss** — Medium
+- [x] **6. Group Humanity Gain and Humanity Loss** — Medium
   - Expose gain and loss as clear, separate inputs.
   - Apply the Cyberpunk RED system's Humanity rules and limits correctly.
-- [ ] **7. Additional individual payouts in the same window** — Medium–Hard
+- [x] **7. Additional individual payouts in the same window** — Medium–Hard
   - Add per-character overrides or bonuses alongside group values.
   - Support Money, IP, Humanity Gain, Humanity Loss, and Reputation.
   - Preview the combined group and individual result for each character.
-- [ ] **8. Standard Reputation payouts** — Medium
+- [x] **8. Standard Reputation payouts** — Medium
   - Apply character Reputation changes through the individual payout section.
   - Include the old value, adjustment, and new value in the payout record.
 
@@ -89,8 +89,8 @@ transaction model has been exercised in real sessions.
 
 ## Decisions to make while implementing
 
-- Players may select more than one eligible character in a session; Actor IDs
-  are deduplicated before payout execution.
+- Each selected player has exactly one eligible character in a session; shared
+  Actor IDs are deduplicated before payout execution.
 - Whether negative Money/IP values are permitted or must use a separate spending
   workflow.
 - What session metadata is mandatory beyond date, label, and notes.

@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.7 - 2026-08-24
+
+- Restricted each selected player to one payout Actor and reduced UI whitespace.
+- Added repeatable group and individual payout entries with separate Humanity
+  Gain and Humanity Loss choices.
+- Added fixed or player-rolled 1d6–4d6 Humanity payouts through private chat
+  prompts.
+- Added an old-to-new payout preview and transactional Actor updates with
+  rollback protection.
+- Added Money, IP, Humanity, EMP, and standard Reputation execution plus payout
+  ledger records.
+
 ## 0.1.6 - 2026-08-24
 
 - Compressed the session and target summary into a single compact row.
