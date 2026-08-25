@@ -585,6 +585,16 @@
   font-size: 0.8rem;
 }
 
+.pneuma-payouts .inbox-awards {
+  margin: 0.3rem 0 0;
+  padding-left: 1.2rem;
+  font-size: 0.8rem;
+}
+
+.pneuma-payouts .inbox-awards li {
+  margin-bottom: 0.15rem;
+}
+
 .pneuma-payouts .inbox-item button {
   width: auto;
   margin: 0;

@@ -17,6 +17,7 @@ export interface PayoutAcknowledgment {
   actorName: string;
   createdAt: string;
   acknowledgedAt: string | null;
+  awards: string[];
 }
 
 interface InboxData {
@@ -90,6 +91,9 @@ export async function createPayoutAcknowledgments(
             actorName: actor.name,
             createdAt: new Date().toISOString(),
             acknowledgedAt: null,
+            awards: plan.changes
+              .filter(({ targetId }) => targetId === actor.id)
+              .map(formatPayoutChange),
           } satisfies PayoutAcknowledgment,
         ],
       });
@@ -224,7 +228,12 @@ function collectAcknowledgments(
 function getAcknowledgments(user: FoundryUser): PayoutAcknowledgment[] {
   const value = user.getFlag(MODULE_ID, "payoutAcknowledgments");
   return Array.isArray(value)
-    ? value.filter(isAcknowledgment).map((entry) => structuredClone(entry))
+    ? value.filter(isAcknowledgment).map((entry) => ({
+        ...structuredClone(entry),
+        awards: Array.isArray(entry.awards)
+          ? entry.awards
+          : ["Payout details unavailable for this older acknowledgment."],
+      }))
     : [];
 }
 
@@ -264,4 +273,21 @@ function isAcknowledgment(value: unknown): value is PayoutAcknowledgment {
     typeof entry.userId === "string" &&
     (entry.acknowledgedAt === null || typeof entry.acknowledgedAt === "string")
   );
+}
+
+function formatPayoutChange(change: PayoutPlan["changes"][number]): string {
+  const labels: Record<string, string> = {
+    money: "Money",
+    ip: "IP",
+    humanityGain: "Humanity Gain",
+    humanityLoss: "Humanity Loss",
+    reputation: "Reputation",
+    factionReputation: "Specific Reputation",
+  };
+  const faction = String(change.details?.faction ?? "").trim();
+  const description = String(change.details?.description ?? "").trim();
+  const result = change.details?.pendingPlayerRoll
+    ? `${String(change.details.formula)} — pending roll`
+    : `${change.previousValue} → ${change.newValue} (${change.amount >= 0 ? "+" : ""}${change.amount})`;
+  return `${labels[change.reward] ?? change.reward}${faction ? ` (${faction})` : ""}: ${result}${description ? ` — ${description}` : ""}`;
 }

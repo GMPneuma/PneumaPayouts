@@ -44,6 +44,9 @@ const EMPTY_DATA: PayoutJournalData = {
   attendance: [],
 };
 
+const JOURNAL_OBSERVER = 2;
+const JOURNAL_OWNER = 3;
+
 export function registerPayoutJournalSettings(): void {
   game.settings.register(MODULE_ID, PAYOUT_JOURNAL_ID_SETTING, {
     name: "Payout Journal ID",
@@ -73,10 +76,10 @@ export async function ensurePayoutJournal(): Promise<FoundryJournalEntry> {
     typeof storedId === "string" && storedId
       ? game.journal.get(storedId)
       : undefined;
-  journal ??= Array.from(game.journal).find(({ name }) => name === "Payouts");
   if (!journal) {
     journal = await JournalEntry.create({
       name: "Payouts",
+      ownership: payoutJournalOwnership(),
       pages: [
         textPage("HQ", renderHqPage(EMPTY_DATA), 100000),
         textPage("Player Reputation", renderReputationPage(EMPTY_DATA), 200000),
@@ -98,9 +101,21 @@ export async function ensurePayoutJournal(): Promise<FoundryJournalEntry> {
   );
   if (missingPages.length)
     await journal.createEmbeddedDocuments("JournalEntryPage", missingPages);
+  await journal.update({ ownership: payoutJournalOwnership() });
+  await migrateExistingHqPage(journal);
   await game.settings.set(MODULE_ID, PAYOUT_JOURNAL_ID_SETTING, journal.id);
   await renderPayoutJournal(journal, getPayoutJournalData());
   return journal;
+}
+
+function payoutJournalOwnership(): Record<string, number> {
+  return Object.fromEntries([
+    ["default", JOURNAL_OBSERVER],
+    ...Array.from(game.users).map(({ id, isGM }) => [
+      id,
+      isGM ? JOURNAL_OWNER : JOURNAL_OBSERVER,
+    ]),
+  ]);
 }
 
 export async function applyPayoutToJournal(
@@ -171,7 +186,7 @@ async function renderPayoutJournal(
 }
 
 function renderHqPage(data: PayoutJournalData): string {
-  return `<h1>HQ</h1><h2>Purchased Improvements</h2>${table(
+  return `<h2>Purchased Improvements</h2>${table(
     ["Improvement", "IP Spent"],
     data.hqImprovements.map(({ name, ipSpent }) => [name, String(ipSpent)]),
   )}<h2>HQ IP Journal</h2>${table(
@@ -185,7 +200,7 @@ function renderHqPage(data: PayoutJournalData): string {
 }
 
 function renderReputationPage(data: PayoutJournalData): string {
-  return `<h1>Player Reputation</h1>${table(
+  return table(
     ["Actor", "Reputation", "Faction", "Reason"],
     data.factionReputations.map(
       ({ actorName, reputation, faction, reason }) => [
@@ -195,11 +210,11 @@ function renderReputationPage(data: PayoutJournalData): string {
         reason,
       ],
     ),
-  )}`;
+  );
 }
 
 function renderAttendancePage(data: PayoutJournalData): string {
-  return `<h1>Attendance</h1>${table(
+  return table(
     ["Player", "Sessions Played"],
     [...data.attendance]
       .sort(
@@ -207,7 +222,7 @@ function renderAttendancePage(data: PayoutJournalData): string {
           a.sessions - b.sessions || a.userName.localeCompare(b.userName),
       )
       .map(({ userName, sessions }) => [userName, String(sessions)]),
-  )}`;
+  );
 }
 
 function table(headers: string[], rows: string[][]): string {
@@ -219,9 +234,25 @@ function table(headers: string[], rows: string[][]): string {
         )
         .join("")
     : `<tr><td colspan="${headers.length}"><em>No entries yet.</em></td></tr>`;
-  return `<table><thead><tr>${headers
+  return `<table><tbody><tr>${headers
     .map((header) => `<th>${escapeHtml(header)}</th>`)
-    .join("")}</tr></thead><tbody>${body}</tbody></table>`;
+    .join("")}</tr>${body}</tbody></table>`;
+}
+
+async function migrateExistingHqPage(
+  journal: FoundryJournalEntry,
+): Promise<void> {
+  const page = Array.from(journal.pages).find(({ name }) => name === "HQ");
+  const content = page?.text?.content;
+  if (!page || typeof content !== "string") return;
+
+  const migrated = content
+    .replace(/^\s*<h1>\s*HQ\s*<\/h1>/i, "")
+    .replace(
+      /<thead>\s*(<tr>[\s\S]*?<\/tr>)\s*<\/thead>\s*<tbody>/gi,
+      "<tbody>$1",
+    );
+  if (migrated !== content) await page.update({ "text.content": migrated });
 }
 
 function textPage(name: string, content: string, sort: number): object {

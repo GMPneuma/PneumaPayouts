@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.10 - 2026-08-25
+
+- Expanded payout acknowledgments to show every applicable group and individual
+  award for the recipient.
+- Fixed duplicated journal page titles and incorrect first-data-row header
+  styling, including a safe migration for the editable HQ page.
+- Set the Payouts journal permissions to Owner for GMs and Assistant GMs and
+  read-only for Players and Trusted Players.
+- Stopped adopting unrelated journals solely because they are named Payouts.
+
 ## 0.1.9 - 2026-08-25
 
 - Fixed recipient cards shrinking and overlapping in the payout Preview.

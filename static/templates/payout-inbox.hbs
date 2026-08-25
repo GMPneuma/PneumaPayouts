@@ -36,6 +36,11 @@
           <div>
             <strong>{{userName}} — {{sessionLabel}}</strong>
             <p>{{actorName}}</p>
+            <ul class="inbox-awards">
+              {{#each awards}}
+                <li>{{this}}</li>
+              {{/each}}
+            </ul>
           </div>
           {{#if pending}}
             <button

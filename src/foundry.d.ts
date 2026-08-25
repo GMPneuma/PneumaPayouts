@@ -166,6 +166,7 @@ declare class Dialog {
 
 interface FoundryJournalPage {
   name: string;
+  text?: { content?: string };
   update(data: Record<string, unknown>): Promise<unknown>;
 }
 
@@ -173,6 +174,7 @@ interface FoundryJournalEntry {
   id: string;
   name: string;
   pages: Iterable<FoundryJournalPage>;
+  update(data: Record<string, unknown>): Promise<unknown>;
   createEmbeddedDocuments(
     type: "JournalEntryPage",
     data: object[],
