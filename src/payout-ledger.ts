@@ -85,6 +85,7 @@ function isPayoutRecord(value: unknown): value is PayoutRecord {
     typeof value.createdByUserId === "string" &&
     typeof value.createdByUserName === "string" &&
     typeof value.sessionLabel === "string" &&
+    (value.inGameDate === undefined || typeof value.inGameDate === "string") &&
     typeof value.notes === "string" &&
     Array.isArray(value.participants) &&
     Array.isArray(value.changes) &&

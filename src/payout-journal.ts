@@ -28,6 +28,7 @@ export interface AttendanceRecord {
   userId: string;
   userName: string;
   sessions: number;
+  lastSession: string;
 }
 
 export interface PayoutJournalData {
@@ -124,6 +125,10 @@ export async function applyPayoutToJournal(
   const journal = await ensurePayoutJournal();
   const previous = getPayoutJournalData();
   const updated = structuredClone(previous);
+  const hqPage = Array.from(journal.pages).find(({ name }) => name === "HQ");
+  const previousHqContent = hqPage?.text?.content;
+
+  updated.hqIpTransactions.push(...plan.hqIpTransactions);
 
   for (const { participant } of plan.actors) {
     const existing = updated.attendance.find(
@@ -132,11 +137,13 @@ export async function applyPayoutToJournal(
     if (existing) {
       existing.sessions += 1;
       existing.userName = participant.userName;
+      existing.lastSession = plan.sessionLabel;
     } else {
       updated.attendance.push({
         userId: participant.userId,
         userName: participant.userName,
         sessions: 1,
+        lastSession: plan.sessionLabel,
       });
     }
   }
@@ -153,11 +160,61 @@ export async function applyPayoutToJournal(
 
   try {
     await saveAndRender(journal, updated);
+    if (hqPage && plan.hqIpTransactions.length)
+      await appendHqIpRows(hqPage, plan.hqIpTransactions);
   } catch (error) {
     await saveAndRender(journal, previous).catch(() => undefined);
+    if (hqPage && typeof previousHqContent === "string")
+      await hqPage
+        .update({ "text.content": previousHqContent })
+        .catch(() => undefined);
     throw error;
   }
-  return async () => saveAndRender(journal, previous);
+  return async () => {
+    await saveAndRender(journal, previous);
+    if (hqPage && typeof previousHqContent === "string")
+      await hqPage.update({ "text.content": previousHqContent });
+  };
+}
+
+async function appendHqIpRows(
+  page: FoundryJournalPage,
+  transactions: HqIpTransaction[],
+): Promise<void> {
+  const content = page.text?.content;
+  if (typeof content !== "string")
+    throw new Error("The HQ journal page has no editable text content.");
+
+  const template = document.createElement("template");
+  template.innerHTML = content;
+  const heading = Array.from(template.content.querySelectorAll("h2")).find(
+    ({ textContent }) => textContent?.trim() === "HQ IP Journal",
+  );
+  const table = heading?.nextElementSibling;
+  const body = table?.querySelector("tbody");
+  if (!body) throw new Error("The HQ IP Journal table could not be found.");
+
+  const rows = Array.from(body.querySelectorAll("tr"));
+  if (
+    rows.length === 2 &&
+    rows[1]?.textContent?.trim().toLocaleLowerCase() === "no entries yet."
+  )
+    rows[1].remove();
+
+  for (const { date, amount, reason } of transactions) {
+    const row = document.createElement("tr");
+    for (const value of [
+      date,
+      amount >= 0 ? `+${amount}` : String(amount),
+      reason,
+    ]) {
+      const cell = document.createElement("td");
+      cell.textContent = value;
+      row.append(cell);
+    }
+    body.append(row);
+  }
+  await page.update({ "text.content": template.innerHTML });
 }
 
 async function saveAndRender(
@@ -215,13 +272,17 @@ function renderReputationPage(data: PayoutJournalData): string {
 
 function renderAttendancePage(data: PayoutJournalData): string {
   return table(
-    ["Player", "Sessions Played"],
+    ["Player", "Sessions Played", "Last Session"],
     [...data.attendance]
       .sort(
         (a, b) =>
           a.sessions - b.sessions || a.userName.localeCompare(b.userName),
       )
-      .map(({ userName, sessions }) => [userName, String(sessions)]),
+      .map(({ userName, sessions, lastSession }) => [
+        userName,
+        String(sessions),
+        lastSession || "—",
+      ]),
   );
 }
 

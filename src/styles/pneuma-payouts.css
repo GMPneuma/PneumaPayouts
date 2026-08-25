@@ -26,7 +26,7 @@
 
 .pneuma-payouts .payout-form {
   display: flex;
-  max-height: 68vh;
+  height: 100%;
   flex-direction: column;
   gap: 0.3rem;
   padding: 0.45rem;
@@ -68,9 +68,23 @@
   margin: 0 0 0.25rem;
 }
 
+.pneuma-payouts [data-step-panel="participants"] {
+  display: grid;
+  min-height: 0;
+  flex: 1;
+  grid-template-columns: minmax(14rem, 0.75fr) minmax(26rem, 2fr);
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 0.5rem;
+}
+
+.pneuma-payouts [data-step-panel="participants"] .payout-heading {
+  border-right: 1px solid var(--color-border-light-primary, #777);
+  padding-right: 0.5rem;
+}
+
 .pneuma-payouts .payout-metadata {
   display: grid;
-  grid-template-columns: minmax(12rem, 1fr) minmax(16rem, 2fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.5rem;
 }
 
@@ -81,6 +95,11 @@
   font-weight: 600;
 }
 
+.pneuma-payouts .payout-metadata textarea {
+  min-height: 8rem;
+  resize: vertical;
+}
+
 .pneuma-payouts .participant-list {
   display: flex;
   min-height: 6rem;
@@ -89,6 +108,10 @@
   gap: 0.25rem;
   overflow-y: auto;
   padding-right: 0.25rem;
+}
+
+.pneuma-payouts [data-step-panel="participants"] .payout-footer {
+  grid-column: 1 / -1;
 }
 
 .pneuma-payouts .participant {
@@ -115,11 +138,28 @@
   padding: 0.25rem 0.75rem;
 }
 
-.pneuma-payouts .reward-layout {
+.pneuma-payouts [data-step-panel="rewards"] {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.pneuma-payouts .payout-step-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  min-height: 0;
+  flex: 1;
+  grid-template-columns: minmax(21rem, 0.9fr) minmax(0, 1.6fr);
+  gap: 0.5rem;
+}
+
+.pneuma-payouts .reward-layout {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
   gap: 0.45rem;
-  margin-bottom: 0.35rem;
+  overflow-y: auto;
+  padding-right: 0.2rem;
 }
 
 .pneuma-payouts .reward-summary {
@@ -177,10 +217,17 @@
 }
 
 .pneuma-payouts .additional-entry {
+  --payout-amount-width: 4.5rem;
   display: grid;
-  grid-template-columns: 7rem 4.5rem auto minmax(7rem, 1fr) 1.8rem;
+  grid-template-columns:
+    minmax(6.5rem, 1fr) var(--payout-amount-width) auto
+    1.8rem;
   align-items: center;
   gap: 0.3rem;
+}
+
+.pneuma-payouts .additional-entry [data-additional-field="description"] {
+  grid-column: 1 / 4;
 }
 
 .pneuma-payouts .add-entry {
@@ -197,8 +244,11 @@
 }
 
 .pneuma-payouts .individual-rewards {
-  border-top: 1px solid var(--color-border-light-primary, #777);
-  padding-top: 0.5rem;
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  border-left: 1px solid var(--color-border-light-primary, #777);
+  padding-left: 0.5rem;
 }
 
 .pneuma-payouts .individual-rewards header,
@@ -218,7 +268,8 @@
 
 .pneuma-payouts .individual-payouts {
   display: flex;
-  max-height: 14rem;
+  min-height: 0;
+  flex: 1;
   flex-direction: column;
   gap: 0.3rem;
   overflow-y: auto;
@@ -251,14 +302,53 @@
 }
 
 .pneuma-payouts .individual-entry {
-  display: grid;
-  grid-template-columns: 8.5rem 4.5rem auto minmax(9rem, 1fr) 1.8rem;
+  --payout-amount-width: 4.5rem;
+  display: flex;
   align-items: center;
   gap: 0.3rem;
 }
 
-.pneuma-payouts .individual-entry:has([data-entry-faction]:not([hidden])) {
-  grid-template-columns: 8rem 7rem 4.5rem auto minmax(8rem, 1fr) 1.8rem;
+.pneuma-payouts .individual-entry [data-entry-type] {
+  flex: 0 0 8.5rem;
+}
+
+.pneuma-payouts .individual-entry [data-entry-faction] {
+  flex: 0 0 7rem;
+}
+
+.pneuma-payouts .individual-entry [data-entry-amount] {
+  flex: 0 0 var(--payout-amount-width);
+}
+
+.pneuma-payouts .payout-entry--two-digit {
+  --payout-amount-width: 4ch;
+}
+
+.pneuma-payouts .payout-entry--two-digit [data-entry-amount] {
+  box-sizing: border-box;
+  width: 4ch !important;
+  min-width: 4ch !important;
+  max-width: 4ch !important;
+  padding-right: 0.2rem;
+  padding-left: 0.2rem;
+  text-align: center;
+}
+
+.pneuma-payouts [data-entry-amount]:disabled {
+  border-color: rgba(90, 90, 90, 0.55);
+  background: rgba(90, 90, 90, 0.35);
+  color: var(--color-text-dark-secondary, #777);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.pneuma-payouts .individual-entry [data-entry-mode] {
+  flex: 0 0 5rem;
+}
+
+.pneuma-payouts .individual-entry [data-entry-field="description"] {
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .pneuma-payouts .participant-toggle,
@@ -344,10 +434,9 @@
 
 .pneuma-payouts .preview-heading {
   display: grid;
-  grid-template-columns: minmax(9rem, 0.7fr) minmax(12rem, 1.3fr) minmax(
-      12rem,
-      1fr
-    );
+  grid-template-columns:
+    minmax(8rem, 0.7fr) minmax(12rem, 1.3fr) minmax(8rem, 0.7fr)
+    minmax(12rem, 1fr);
   gap: 0.4rem;
   padding: 0.3rem;
   border: 1px solid var(--color-border-light-primary, #777);
@@ -377,6 +466,7 @@
 }
 
 .pneuma-payouts .preview-heading [data-preview-recipients],
+.pneuma-payouts .preview-heading [data-preview-in-game-date],
 .pneuma-payouts .preview-heading [data-preview-notes] {
   overflow: hidden;
   text-overflow: ellipsis;

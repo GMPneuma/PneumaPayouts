@@ -3,6 +3,7 @@ import { MODULE_ID } from "./constants";
 import {
   applyPayoutToJournal,
   type FactionReputationRecord,
+  type HqIpTransaction,
 } from "./payout-journal";
 import {
   createHumanityPrompt,
@@ -45,11 +46,13 @@ export interface PayoutActorInput {
 
 export interface PayoutPlan {
   sessionLabel: string;
+  inGameDate: string;
   notes: string;
   actors: PayoutActorInput[];
   changes: PayoutChange[];
   humanityPrompts: HumanityPrompt[];
   factionReputations: FactionReputationRecord[];
+  hqIpTransactions: HqIpTransaction[];
 }
 
 interface ActorSnapshot {
@@ -133,6 +136,7 @@ export async function executePayoutPlan(plan: PayoutPlan): Promise<void> {
     createdByUserId: game.user.id,
     createdByUserName: game.user.name,
     sessionLabel: plan.sessionLabel,
+    inGameDate: plan.inGameDate,
     notes: plan.notes,
     participants: plan.actors.map(({ participant }) => participant),
     changes: plan.changes,

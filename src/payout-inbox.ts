@@ -279,6 +279,7 @@ function formatPayoutChange(change: PayoutPlan["changes"][number]): string {
   const labels: Record<string, string> = {
     money: "Money",
     ip: "IP",
+    hqIp: "HQ IP",
     humanityGain: "Humanity Gain",
     humanityLoss: "Humanity Loss",
     reputation: "Reputation",

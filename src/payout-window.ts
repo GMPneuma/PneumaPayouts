@@ -13,6 +13,7 @@ import {
   type RewardEntry,
 } from "./payout-execution";
 import { getPayoutJournalData } from "./payout-journal";
+import { getLastPayoutDate, saveLastPayoutDate } from "./payout-date";
 import type { PayoutChange } from "./payout-record";
 import {
   discoverPlayerAccounts,
@@ -47,6 +48,7 @@ interface PayoutWindowData {
   players: PlayerView[];
   playerCount: number;
   activePlayerCount: number;
+  inGameDate: string;
 }
 
 const ISSUE_LABELS: Record<PlayerDiscoveryIssue, string> = {
@@ -71,7 +73,7 @@ export class PayoutWindow extends FormApplication {
       title: "Pneuma's Payouts",
       template: `modules/${MODULE_ID}/templates/payout-window.hbs`,
       width: 900,
-      height: "auto",
+      height: 760,
       resizable: true,
       closeOnSubmit: false,
       submitOnChange: false,
@@ -84,6 +86,7 @@ export class PayoutWindow extends FormApplication {
       players: accounts.map(toPlayerView),
       playerCount: accounts.length,
       activePlayerCount: accounts.filter(({ active }) => active).length,
+      inGameDate: getLastPayoutDate(),
     };
   }
 
@@ -94,6 +97,14 @@ export class PayoutWindow extends FormApplication {
     if (!root) return;
 
     this.#initializeSelection(root);
+    root
+      .querySelector<HTMLInputElement>('[name="inGameDate"]')
+      ?.addEventListener("change", (event) => {
+        const input = event.currentTarget as HTMLInputElement;
+        void saveLastPayoutDate(input.value).catch(() =>
+          ui.notifications.warn("The default in-game date could not be saved."),
+        );
+      });
 
     root
       .querySelectorAll<HTMLInputElement>("[data-user-toggle]")
@@ -138,8 +149,15 @@ export class PayoutWindow extends FormApplication {
       .querySelector<HTMLButtonElement>("[data-apply-payout]")
       ?.addEventListener("click", () => void this.#applyPayout(root));
 
-    root.addEventListener("input", () => {
+    root.addEventListener("input", (event) => {
       this.#plan = null;
+      const target = event.target;
+      if (
+        target instanceof HTMLInputElement &&
+        target.matches("[data-entry-amount]") &&
+        target.closest(".payout-entry--two-digit")
+      )
+        target.value = target.value.replace(/\D/g, "").slice(0, 2);
     });
 
     root
@@ -410,9 +428,27 @@ export class PayoutWindow extends FormApplication {
 
     const humanity =
       type.value === "humanityGain" || type.value === "humanityLoss";
+    const twoDigitAmount =
+      humanity ||
+      type.value === "newReputation" ||
+      type.value === "specificReputation";
+    entry.classList.toggle("payout-entry--two-digit", twoDigitAmount);
     mode.hidden = !humanity;
     mode.disabled = !humanity;
     amount.disabled = humanity && mode.value !== "fixed";
+    if (humanity && mode.value !== "fixed") amount.value = "0";
+    if (twoDigitAmount) {
+      amount.type = "text";
+      amount.inputMode = "numeric";
+      amount.maxLength = 2;
+      amount.max = "99";
+      amount.value = amount.value.replace(/\D/g, "").slice(0, 2);
+    } else {
+      amount.type = "number";
+      amount.removeAttribute("inputmode");
+      amount.removeAttribute("maxlength");
+      amount.removeAttribute("max");
+    }
     amount.placeholder = humanity && mode.value !== "fixed" ? "Dice" : "Amount";
     if (faction) {
       const specificReputation = type.value === "specificReputation";
@@ -447,6 +483,7 @@ export class PayoutWindow extends FormApplication {
         .join(", "),
     );
     this.#setText(root, "[data-preview-notes]", notes?.value.trim() || "None");
+    this.#setText(root, "[data-preview-in-game-date]", this.#plan.inGameDate);
 
     const groupList = root.querySelector<HTMLElement>("[data-preview-group]");
     if (groupList) {
@@ -454,6 +491,7 @@ export class PayoutWindow extends FormApplication {
       const primaryFields = [
         ["Money", "groupMoney", "groupMoneyDescription"],
         ["IP", "groupIp", "groupIpDescription"],
+        ["HQ IP", "groupHqIp", "groupHqIpDescription"],
       ] as const;
       for (const [label, amountName, descriptionName] of primaryFields) {
         const amount = root.querySelector<HTMLInputElement>(
@@ -527,6 +565,10 @@ export class PayoutWindow extends FormApplication {
       .querySelector<HTMLInputElement>('[name="sessionLabel"]')
       ?.value.trim();
     if (!sessionLabel) throw new Error("A session label is required.");
+    const inGameDate =
+      root
+        .querySelector<HTMLInputElement>('[name="inGameDate"]')
+        ?.value.trim() ?? "";
 
     const groupEntries: RewardEntry[] = [];
     const primary = [
@@ -553,6 +595,25 @@ export class PayoutWindow extends FormApplication {
       "[data-additional-entries] [data-payout-entry]",
     ))
       groupEntries.push({ ...this.#readRewardEntry(entry), scope: "group" });
+
+    const hqIpAmount = Number(
+      root.querySelector<HTMLInputElement>('[name="groupHqIp"]')?.value,
+    );
+    if (!Number.isSafeInteger(hqIpAmount))
+      throw new Error("HQ IP must be a whole number.");
+    const hqIpDescription =
+      root
+        .querySelector<HTMLInputElement>('[name="groupHqIpDescription"]')
+        ?.value.trim() ?? "";
+    const hqIpTransactions = hqIpAmount
+      ? [
+          {
+            date: inGameDate || new Date().toISOString().slice(0, 10),
+            amount: hqIpAmount,
+            reason: hqIpDescription || sessionLabel,
+          },
+        ]
+      : [];
 
     const actors: PayoutPlan["actors"] = [];
     const humanityPrompts: PayoutPlan["humanityPrompts"] = [];
@@ -634,6 +695,21 @@ export class PayoutWindow extends FormApplication {
       }
     }
     if (!actors.length) throw new Error("Select at least one recipient.");
+    if (hqIpAmount) {
+      journalChanges.push({
+        reward: "hqIp",
+        targetType: "world",
+        targetId: null,
+        targetName: "HQ",
+        amount: hqIpAmount,
+        previousValue: null,
+        newValue: null,
+        details: {
+          description: hqIpDescription,
+          scope: "group",
+        },
+      });
+    }
     for (const { participant } of actors) {
       const previous =
         journalData.attendance.find(
@@ -651,12 +727,14 @@ export class PayoutWindow extends FormApplication {
     }
     return {
       sessionLabel,
+      inGameDate,
       notes:
         root.querySelector<HTMLTextAreaElement>('[name="notes"]')?.value ?? "",
       actors,
       changes: [...actors.flatMap(planActorChanges), ...journalChanges],
       humanityPrompts,
       factionReputations,
+      hqIpTransactions,
     };
   }
 
@@ -681,6 +759,14 @@ export class PayoutWindow extends FormApplication {
       throw new Error(`${this.#rewardLabel(reward)} must be a whole number.`);
     if ((reward === "humanityGain" || reward === "humanityLoss") && amount < 0)
       throw new Error("Humanity amounts cannot be negative.");
+    if (
+      (reward === "humanityGain" ||
+        reward === "humanityLoss" ||
+        reward === "reputation" ||
+        reward === "factionReputation") &&
+      amount > 99
+    )
+      throw new Error(`${this.#rewardLabel(reward)} cannot exceed 99.`);
     if (reward === "reputation" && amount < 0)
       throw new Error("New Reputation cannot be negative.");
     const faction = entry
@@ -696,8 +782,9 @@ export class PayoutWindow extends FormApplication {
       faction,
       setValue: reward === "reputation",
       description:
-        entry.querySelector<HTMLInputElement>('input[type="text"]')?.value ??
-        "",
+        entry.querySelector<HTMLInputElement>(
+          '[data-entry-field="description"], [data-additional-field="description"]',
+        )?.value ?? "",
     };
   }
 
@@ -719,6 +806,11 @@ export class PayoutWindow extends FormApplication {
       const plan = this.#plan;
       const discordLinks = getDiscordLinks();
       await executePayoutPlan(plan);
+      await saveLastPayoutDate(plan.inGameDate).catch(() =>
+        ui.notifications.warn(
+          "Payout applied, but the last-used in-game date could not be saved.",
+        ),
+      );
       ui.notifications.info("Payout applied and recorded successfully.");
       await this.close();
       if (isDiscordMarkdownEnabled())
@@ -749,6 +841,7 @@ export class PayoutWindow extends FormApplication {
         {
           money: "Money",
           ip: "IP",
+          hqIp: "HQ IP",
           humanityGain: "Gain Humanity",
           humanityLoss: "Lose Humanity",
           reputation: "Reputation",

@@ -41,6 +41,7 @@ export interface PayoutRecord {
   createdByUserId: string;
   createdByUserName: string;
   sessionLabel: string;
+  inGameDate?: string;
   notes: string;
   participants: PayoutParticipant[];
   changes: PayoutChange[];
@@ -51,6 +52,7 @@ export interface CreatePayoutRecordInput {
   createdByUserId: string;
   createdByUserName: string;
   sessionLabel: string;
+  inGameDate?: string;
   notes?: string;
   participants?: PayoutParticipant[];
   changes?: PayoutChange[];
@@ -77,6 +79,7 @@ export function createPayoutRecord(
     createdByUserId: input.createdByUserId,
     createdByUserName: input.createdByUserName.trim(),
     sessionLabel,
+    inGameDate: input.inGameDate?.trim() ?? "",
     notes: input.notes?.trim() ?? "",
     participants: structuredClone(input.participants ?? []),
     changes: structuredClone(input.changes ?? []),

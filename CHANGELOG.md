@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.1.11 - 2026-08-25
+
+- Added group HQ IP payouts with Preview, Discord, ledger, and HQ journal
+  integration.
+- Added Last Session to attendance tracking and fixed payout descriptions across
+  Preview, Discord, journals, Actor transactions, Humanity prompts, and Inbox.
+- Redesigned Participants and Payout as compact two-column forms and increased
+  the default window height.
+- Added a remembered free-text in-game date to payout records and summaries.
+- Made individual descriptions fill available space and restricted Humanity and
+  Reputation amounts to compact two-digit fields.
+- Improved Humanity dice-mode behavior by clearing and disabling the fixed
+  amount field.
+
 ## 0.1.10 - 2026-08-25
 
 - Expanded payout acknowledgments to show every applicable group and individual

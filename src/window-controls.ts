@@ -18,7 +18,6 @@ export function registerPayoutWindowControl(): void {
   Hooks.on("getSceneControlButtons", (controls: SceneControl[]) => {
     const tokenControls = controls.find(({ name }) => name === "token");
     if (!tokenControls) return;
-
     tokenControls.tools.push({
       name: `${MODULE_ID}-inbox`,
       title: "Open Payout Inbox",

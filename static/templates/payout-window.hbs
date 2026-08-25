@@ -6,7 +6,7 @@
     ><b>1</b> Participants</span>
     <i class="fas fa-chevron-right" aria-hidden="true"></i>
     <span class="wizard-step" data-step-indicator="rewards"><b>2</b>
-      Rewards</span>
+      Payout</span>
     <i class="fas fa-chevron-right" aria-hidden="true"></i>
     <span class="wizard-step" data-step-indicator="preview"><b>3</b>
       Preview</span>
@@ -18,7 +18,7 @@
 
       <div class="payout-metadata">
         <label>
-          <span>Session label</span>
+          <span>Session Name</span>
           <input
             type="text"
             name="sessionLabel"
@@ -28,10 +28,20 @@
         </label>
 
         <label>
+          <span>In-Game Date</span>
+          <input
+            type="text"
+            name="inGameDate"
+            value="{{inGameDate}}"
+            placeholder="In-game date"
+          />
+        </label>
+
+        <label>
           <span>Notes</span>
           <textarea
             name="notes"
-            rows="2"
+            rows="8"
             placeholder="Optional payout notes"
           ></textarea>
         </label>
@@ -135,67 +145,164 @@
       <span><b>Targets:</b> <span data-recipient-list></span></span>
     </header>
 
-    <div class="reward-layout">
-      <fieldset class="primary-payouts">
-        <legend>Primary payout</legend>
+    <div class="payout-step-layout">
+      <div class="reward-layout">
+        <fieldset class="primary-payouts">
+          <legend>Primary payout</legend>
 
-        <label class="primary-payout-row">
-          <span><i class="fas fa-coins"></i> Money</span>
-          <input type="number" name="groupMoney" value="0" step="1" />
-          <input
-            type="text"
-            name="groupMoneyDescription"
-            placeholder="Description"
-          />
-        </label>
+          <label class="primary-payout-row">
+            <span><i class="fas fa-coins"></i> Money</span>
+            <input type="number" name="groupMoney" value="0" step="1" />
+            <input
+              type="text"
+              name="groupMoneyDescription"
+              placeholder="Description"
+            />
+          </label>
 
-        <label class="primary-payout-row">
-          <span><i class="fas fa-graduation-cap"></i> IP</span>
-          <input type="number" name="groupIp" value="0" step="1" />
-          <input
-            type="text"
-            name="groupIpDescription"
-            placeholder="Description"
-          />
-        </label>
-      </fieldset>
+          <label class="primary-payout-row">
+            <span><i class="fas fa-graduation-cap"></i> IP</span>
+            <input type="number" name="groupIp" value="0" step="1" />
+            <input
+              type="text"
+              name="groupIpDescription"
+              placeholder="Description"
+            />
+          </label>
 
-      <fieldset class="additional-payouts">
-        <legend>Additional entries</legend>
-        <div data-additional-entries></div>
-        <button type="button" class="add-entry" data-add-entry>
-          <i class="fas fa-plus"></i>
-          Add entry
-        </button>
+          <label class="primary-payout-row">
+            <span><i class="fas fa-building"></i> HQ IP</span>
+            <input type="number" name="groupHqIp" value="0" step="1" />
+            <input
+              type="text"
+              name="groupHqIpDescription"
+              placeholder="Description"
+            />
+          </label>
+        </fieldset>
 
-        <template data-additional-entry-template>
-          <div
-            class="payout-entry additional-entry"
-            data-additional-entry
-            data-payout-entry
-          >
+        <fieldset class="additional-payouts">
+          <legend>Additional entries</legend>
+          <div data-additional-entries></div>
+          <button type="button" class="add-entry" data-add-entry>
+            <i class="fas fa-plus"></i>
+            Add entry
+          </button>
+
+          <template data-additional-entry-template>
+            <div
+              class="payout-entry additional-entry"
+              data-additional-entry
+              data-payout-entry
+            >
+              <select
+                aria-label="Reward type"
+                data-additional-field="type"
+                data-entry-type
+              >
+                <option value="money">Money</option>
+                <option value="ip">IP</option>
+                <option value="humanityGain">Gain Humanity</option>
+                <option value="humanityLoss">Lose Humanity</option>
+              </select>
+              <input
+                type="number"
+                value="0"
+                step="1"
+                placeholder="Amount"
+                aria-label="Payout amount"
+                data-additional-field="amount"
+                data-entry-amount
+              />
+              <select
+                aria-label="Humanity amount mode"
+                data-additional-field="mode"
+                data-entry-mode
+                hidden
+                disabled
+              >
+                <option value="fixed">Set amount</option>
+                <option value="1d6">1d6</option>
+                <option value="2d6">2d6</option>
+                <option value="3d6">3d6</option>
+                <option value="4d6">4d6</option>
+              </select>
+              <input
+                type="text"
+                placeholder="Description"
+                aria-label="Entry description"
+                data-additional-field="description"
+              />
+              <button
+                type="button"
+                class="remove-entry"
+                title="Remove entry"
+                aria-label="Remove entry"
+                data-remove-entry
+              ><i class="fas fa-trash"></i></button>
+            </div>
+          </template>
+        </fieldset>
+      </div>
+
+      <section class="individual-rewards">
+        <header>
+          <div>
+            <h3>Individual payouts</h3>
+            <p>Additional rewards applied only to the named recipient.</p>
+          </div>
+        </header>
+
+        <div class="individual-payouts" data-individual-payouts></div>
+
+        <template data-individual-row-template>
+          <article class="individual-row" data-individual-row>
+            <header class="individual-row-header">
+              <strong data-individual-actor-name></strong>
+              <button type="button" class="add-entry" data-add-individual-entry>
+                <i class="fas fa-plus"></i>
+                Add entry
+              </button>
+            </header>
+            <div class="individual-entry-list" data-individual-entries></div>
+          </article>
+        </template>
+
+        <template data-individual-entry-template>
+          <div class="payout-entry individual-entry" data-payout-entry>
             <select
               aria-label="Reward type"
-              data-additional-field="type"
+              data-entry-field="type"
               data-entry-type
             >
               <option value="money">Money</option>
               <option value="ip">IP</option>
               <option value="humanityGain">Gain Humanity</option>
               <option value="humanityLoss">Lose Humanity</option>
+              <option value="newReputation">New Reputation</option>
+              <option value="specificReputation">Specific Reputation</option>
             </select>
+            <input
+              type="text"
+              placeholder="Faction"
+              aria-label="Faction"
+              data-entry-field="faction"
+              data-entry-faction
+              hidden
+              disabled
+            />
             <input
               type="number"
               value="0"
               step="1"
               placeholder="Amount"
               aria-label="Payout amount"
-              data-additional-field="amount"
+              data-entry-field="amount"
               data-entry-amount
             />
             <select
               aria-label="Humanity amount mode"
-              data-additional-field="mode"
+              data-entry-field="mode"
               data-entry-mode
               hidden
               disabled
@@ -208,9 +315,9 @@
             </select>
             <input
               type="text"
-              placeholder="Description"
-              aria-label="Entry description"
-              data-additional-field="description"
+              placeholder="Reason / description"
+              aria-label="Reason or description"
+              data-entry-field="description"
             />
             <button
               type="button"
@@ -221,93 +328,8 @@
             ><i class="fas fa-trash"></i></button>
           </div>
         </template>
-      </fieldset>
+      </section>
     </div>
-
-    <section class="individual-rewards">
-      <header>
-        <div>
-          <h3>Individual payouts</h3>
-          <p>Additional rewards applied only to the named recipient.</p>
-        </div>
-      </header>
-
-      <div class="individual-payouts" data-individual-payouts></div>
-
-      <template data-individual-row-template>
-        <article class="individual-row" data-individual-row>
-          <header class="individual-row-header">
-            <strong data-individual-actor-name></strong>
-            <button type="button" class="add-entry" data-add-individual-entry>
-              <i class="fas fa-plus"></i>
-              Add entry
-            </button>
-          </header>
-          <div class="individual-entry-list" data-individual-entries></div>
-        </article>
-      </template>
-
-      <template data-individual-entry-template>
-        <div class="payout-entry individual-entry" data-payout-entry>
-          <select
-            aria-label="Reward type"
-            data-entry-field="type"
-            data-entry-type
-          >
-            <option value="money">Money</option>
-            <option value="ip">IP</option>
-            <option value="humanityGain">Gain Humanity</option>
-            <option value="humanityLoss">Lose Humanity</option>
-            <option value="newReputation">New Reputation</option>
-            <option value="specificReputation">Specific Reputation</option>
-          </select>
-          <input
-            type="text"
-            placeholder="Faction"
-            aria-label="Faction"
-            data-entry-field="faction"
-            data-entry-faction
-            hidden
-            disabled
-          />
-          <input
-            type="number"
-            value="0"
-            step="1"
-            placeholder="Amount"
-            aria-label="Payout amount"
-            data-entry-field="amount"
-            data-entry-amount
-          />
-          <select
-            aria-label="Humanity amount mode"
-            data-entry-field="mode"
-            data-entry-mode
-            hidden
-            disabled
-          >
-            <option value="fixed">Set amount</option>
-            <option value="1d6">1d6</option>
-            <option value="2d6">2d6</option>
-            <option value="3d6">3d6</option>
-            <option value="4d6">4d6</option>
-          </select>
-          <input
-            type="text"
-            placeholder="Reason / description"
-            aria-label="Reason or description"
-            data-entry-field="description"
-          />
-          <button
-            type="button"
-            class="remove-entry"
-            title="Remove entry"
-            aria-label="Remove entry"
-            data-remove-entry
-          ><i class="fas fa-trash"></i></button>
-        </div>
-      </template>
-    </section>
 
     <footer class="payout-footer">
       <button type="button" class="wizard-button" data-previous-step><i
@@ -332,6 +354,11 @@
         <span class="preview-label"><i class="fas fa-users"></i>
           Recipients</span>
         <span data-preview-recipients></span>
+      </div>
+      <div>
+        <span class="preview-label"><i class="fas fa-clock"></i>
+          In-Game Date</span>
+        <span data-preview-in-game-date></span>
       </div>
       <div>
         <span class="preview-label"><i class="fas fa-note-sticky"></i>
