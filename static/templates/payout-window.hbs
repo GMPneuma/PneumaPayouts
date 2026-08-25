@@ -262,6 +262,15 @@
             <option value="specificReputation">Specific Reputation</option>
           </select>
           <input
+            type="text"
+            placeholder="Faction"
+            aria-label="Faction"
+            data-entry-field="faction"
+            data-entry-faction
+            hidden
+            disabled
+          />
+          <input
             type="number"
             value="0"
             step="1"
@@ -315,29 +324,32 @@
   <section data-step-panel="preview" hidden>
     <header class="preview-heading">
       <div>
-        <span class="preview-label">Session</span>
+        <span class="preview-label"><i class="fas fa-calendar-day"></i>
+          Session</span>
         <strong data-preview-session></strong>
       </div>
       <div>
-        <span class="preview-label">Recipients</span>
+        <span class="preview-label"><i class="fas fa-users"></i>
+          Recipients</span>
         <span data-preview-recipients></span>
       </div>
       <div>
-        <span class="preview-label">Notes</span>
+        <span class="preview-label"><i class="fas fa-note-sticky"></i>
+          Notes</span>
         <span data-preview-notes></span>
       </div>
     </header>
 
     <div class="preview-columns">
       <section class="preview-section">
-        <h3>Group payouts</h3>
+        <h3><i class="fas fa-layer-group"></i> Group payouts</h3>
         <p>Each recipient receives every entry below.</p>
         <ul class="preview-list" data-preview-group></ul>
       </section>
 
       <section class="preview-section">
-        <h3>Individual payouts</h3>
-        <p>These entries apply only to the listed recipient.</p>
+        <h3><i class="fas fa-address-card"></i> Final changes by recipient</h3>
+        <p>Combined group and individual results, before applying.</p>
         <div class="preview-individual" data-preview-individual></div>
       </section>
     </div>

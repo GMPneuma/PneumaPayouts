@@ -41,9 +41,15 @@ export async function createHumanityPrompt(
 ): Promise<FoundryChatMessage> {
   const action = prompt.reward === "humanityGain" ? "gain" : "lose";
   const description = escapeHtml(prompt.description || "Pneuma payout");
+  const recipients = new Set([
+    prompt.userId,
+    ...Array.from(game.users)
+      .filter(({ isGM }) => isGM)
+      .map(({ id }) => id),
+  ]);
   return ChatMessage.create({
     user: prompt.userId,
-    whisper: [prompt.userId],
+    whisper: [...recipients],
     content: `<div class="pneuma-humanity-prompt"><p><strong>${escapeHtml(prompt.actorName)}</strong> must roll <strong>${prompt.formula}</strong> to ${action} Humanity.</p><p>${description}</p><button type="button" data-pneuma-humanity-roll><i class="fas fa-dice-d6"></i> Roll Humanity</button></div>`,
     flags: {
       [MODULE_ID]: {

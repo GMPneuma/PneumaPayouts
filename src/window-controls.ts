@@ -9,7 +9,7 @@ export function openPayoutWindow(): void {
     return;
   }
 
-  payoutWindow ??= new PayoutWindow();
+  if (!payoutWindow?.rendered) payoutWindow = new PayoutWindow();
   payoutWindow.render(true);
 }
 

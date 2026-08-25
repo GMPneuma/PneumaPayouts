@@ -29,6 +29,7 @@ interface FoundryHtml {
 
 declare abstract class FormApplication {
   static get defaultOptions(): ApplicationOptions;
+  readonly rendered: boolean;
   render(force?: boolean): this;
   close(): Promise<void>;
   getData(): object;
@@ -59,8 +60,17 @@ interface FoundrySettingConfig {
   hint?: string;
   scope: "client" | "world";
   config: boolean;
-  type: ObjectConstructor;
-  default: object;
+  type: ObjectConstructor | StringConstructor;
+  default: object | string;
+}
+
+interface FoundrySettingsMenuConfig {
+  name: string;
+  label: string;
+  hint?: string;
+  icon?: string;
+  type: typeof FormApplication;
+  restricted?: boolean;
 }
 
 interface FoundryModule {
@@ -97,8 +107,16 @@ declare const game: {
       key: string,
       config: FoundrySettingConfig,
     ): void;
+    registerMenu(
+      namespace: string,
+      key: string,
+      config: FoundrySettingsMenuConfig,
+    ): void;
     get(namespace: string, key: string): unknown;
     set(namespace: string, key: string, value: unknown): Promise<unknown>;
+  };
+  journal: Iterable<FoundryJournalEntry> & {
+    get(id: string): FoundryJournalEntry | undefined;
   };
 };
 
@@ -124,4 +142,39 @@ interface FoundryChatMessage {
 
 declare const ChatMessage: {
   create(data: Record<string, unknown>): Promise<FoundryChatMessage>;
+};
+
+interface DialogButtonConfig {
+  icon?: string;
+  label: string;
+  callback?: (html: FoundryHtml) => void;
+}
+
+declare class Dialog {
+  constructor(config: {
+    title: string;
+    content: string;
+    buttons: Record<string, DialogButtonConfig>;
+    default?: string;
+  });
+  render(force?: boolean): this;
+}
+
+interface FoundryJournalPage {
+  name: string;
+  update(data: Record<string, unknown>): Promise<unknown>;
+}
+
+interface FoundryJournalEntry {
+  id: string;
+  name: string;
+  pages: Iterable<FoundryJournalPage>;
+  createEmbeddedDocuments(
+    type: "JournalEntryPage",
+    data: object[],
+  ): Promise<unknown>;
+}
+
+declare const JournalEntry: {
+  create(data: Record<string, unknown>): Promise<FoundryJournalEntry>;
 };

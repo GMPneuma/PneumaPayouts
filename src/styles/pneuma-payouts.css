@@ -247,6 +247,10 @@
   gap: 0.3rem;
 }
 
+.pneuma-payouts .individual-entry:has([data-entry-faction]:not([hidden])) {
+  grid-template-columns: 8rem 7rem 4.5rem auto minmax(8rem, 1fr) 1.8rem;
+}
+
 .pneuma-payouts .participant-toggle,
 .pneuma-payouts .actor-option {
   display: flex;
@@ -334,15 +338,20 @@
       12rem,
       1fr
     );
-  gap: 0.5rem;
-  border-bottom: 1px solid var(--color-border-light-primary, #777);
-  padding: 0.25rem 0.3rem 0.4rem;
+  gap: 0.4rem;
+  padding: 0.3rem;
+  border: 1px solid var(--color-border-light-primary, #777);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.08);
 }
 
 .pneuma-payouts .preview-heading > div {
   display: flex;
   min-width: 0;
   flex-direction: column;
+  gap: 0.1rem;
+  border-left: 3px solid rgba(255, 210, 74, 0.7);
+  padding-left: 0.4rem;
 }
 
 .pneuma-payouts .preview-label {
@@ -351,6 +360,17 @@
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+.pneuma-payouts .preview-heading [data-preview-session] {
+  font-size: 1rem;
+}
+
+.pneuma-payouts .preview-heading [data-preview-recipients],
+.pneuma-payouts .preview-heading [data-preview-notes] {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .pneuma-payouts .preview-columns {
@@ -363,26 +383,68 @@
 .pneuma-payouts .preview-section {
   border: 1px solid var(--color-border-light-primary, #777);
   border-radius: 4px;
-  padding: 0.4rem 0.5rem;
+  padding: 0;
+  overflow: hidden;
 }
 
 .pneuma-payouts .preview-section h3,
 .pneuma-payouts .preview-section p {
   margin: 0;
+  padding-right: 0.55rem;
+  padding-left: 0.55rem;
+}
+
+.pneuma-payouts .preview-section h3 {
+  border-bottom: 1px solid var(--color-border-light-primary, #777);
+  padding-top: 0.35rem;
+  padding-bottom: 0.3rem;
+  background: rgba(0, 0, 0, 0.1);
+  font-size: 0.95rem;
 }
 
 .pneuma-payouts .preview-section p {
+  padding-top: 0.3rem;
   color: var(--color-text-dark-secondary, #777);
   font-size: 0.75rem;
 }
 
 .pneuma-payouts .preview-list {
   margin: 0.35rem 0 0;
-  padding-left: 1.2rem;
+  padding: 0 0.5rem 0.45rem;
+  list-style: none;
 }
 
 .pneuma-payouts .preview-list li {
+  display: grid;
+  grid-template-columns: minmax(6.5rem, 0.8fr) minmax(5rem, auto) minmax(
+      8rem,
+      1.4fr
+    );
+  align-items: baseline;
+  gap: 0.45rem;
   margin-bottom: 0.2rem;
+  border-radius: 3px;
+  padding: 0.25rem 0.35rem;
+  background: rgba(0, 0, 0, 0.055);
+}
+
+.pneuma-payouts .preview-item-label {
+  font-weight: 700;
+}
+
+.pneuma-payouts .preview-item-amount {
+  color: var(--color-text-hyperlink, #b07800);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.pneuma-payouts .preview-item-description {
+  color: var(--color-text-dark-secondary, #777);
+  overflow: hidden;
+  font-size: 0.75rem;
+  font-style: italic;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .pneuma-payouts .preview-individual {
@@ -391,17 +453,26 @@
   flex-direction: column;
   gap: 0.35rem;
   margin-top: 0.35rem;
+  padding: 0 0.5rem 0.5rem;
   overflow-y: auto;
 }
 
 .pneuma-payouts .preview-recipient {
-  border-top: 1px dotted var(--color-border-light-primary, #777);
-  padding-top: 0.25rem;
+  border: 1px solid var(--color-border-light-primary, #777);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.035);
+  overflow: hidden;
 }
 
-.pneuma-payouts .preview-recipient:first-child {
-  border-top: 0;
-  padding-top: 0;
+.pneuma-payouts .preview-recipient > strong {
+  display: block;
+  padding: 0.25rem 0.4rem;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.pneuma-payouts .preview-recipient .preview-list {
+  margin-top: 0.25rem;
+  padding-bottom: 0.25rem;
 }
 
 .pneuma-payouts .preview-list--empty {
@@ -418,4 +489,36 @@
 .pneuma-humanity-prompt--resolved {
   border-left: 3px solid #278b42;
   padding-left: 0.5rem;
+}
+
+.discord-summary-dialog textarea {
+  width: 100%;
+  min-height: 20rem;
+  resize: vertical;
+  font-family: monospace;
+  font-size: 0.8rem;
+  white-space: pre-wrap;
+}
+
+.discord-links-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.discord-links-form > p {
+  margin: 0;
+}
+
+.discord-links-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.discord-links-list label {
+  display: grid;
+  grid-template-columns: minmax(9rem, 0.8fr) minmax(14rem, 1.2fr);
+  align-items: center;
+  gap: 0.5rem;
 }

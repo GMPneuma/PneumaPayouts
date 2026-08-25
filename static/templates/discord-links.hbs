@@ -1,0 +1,26 @@
+<form class="discord-links-form" autocomplete="off">
+  <p>
+    Enter each player's numeric Discord User ID. In Discord, enable
+    <b>Developer Mode</b>, right-click the user, and choose
+    <b>Copy User ID</b>.
+  </p>
+
+  <div class="discord-links-list">
+    {{#each players}}
+      <label>
+        <strong>{{userName}}</strong>
+        <input
+          type="text"
+          inputmode="numeric"
+          name="links.{{userId}}"
+          value="{{discordUserId}}"
+          placeholder="Discord User ID"
+        />
+      </label>
+    {{else}}
+      <p>No player accounts exist in this world.</p>
+    {{/each}}
+  </div>
+
+  <button type="submit"><i class="fas fa-save"></i> Save Discord Links</button>
+</form>

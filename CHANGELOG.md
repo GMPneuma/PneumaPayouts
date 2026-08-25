@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.8 - 2026-08-25
+
+- Fixed reopening the payout window after completing an earlier payout.
+- Made player Humanity-roll prompts visible to GMs for oversight.
+- Improved Preview readability with aligned values and per-recipient result cards.
+- Added world-level Discord user links and a copy-ready Discord Markdown summary.
+- Added the self-maintaining Payouts journal with HQ, Player Reputation, and
+  Attendance pages.
+- Connected faction-specific Reputation and per-player attendance to completed
+  payouts.
+
 ## 0.1.7 - 2026-08-24
 
 - Restricted each selected player to one payout Actor and reduced UI whitespace.

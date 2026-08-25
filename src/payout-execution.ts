@@ -1,4 +1,8 @@
 import { appendPayoutRecord } from "./payout-ledger";
+import {
+  applyPayoutToJournal,
+  type FactionReputationRecord,
+} from "./payout-journal";
 import { createHumanityPrompt, type HumanityPrompt } from "./humanity-prompts";
 import {
   createPayoutRecord,
@@ -8,7 +12,12 @@ import {
 } from "./payout-record";
 
 export type CharacterReward =
-  "money" | "ip" | "humanityGain" | "humanityLoss" | "reputation";
+  | "money"
+  | "ip"
+  | "humanityGain"
+  | "humanityLoss"
+  | "reputation"
+  | "factionReputation";
 
 export interface RewardEntry {
   reward: CharacterReward;
@@ -16,6 +25,7 @@ export interface RewardEntry {
   description: string;
   setValue?: boolean;
   formula?: string;
+  faction?: string;
 }
 
 export interface PayoutActorInput {
@@ -30,6 +40,7 @@ export interface PayoutPlan {
   actors: PayoutActorInput[];
   changes: PayoutChange[];
   humanityPrompts: HumanityPrompt[];
+  factionReputations: FactionReputationRecord[];
 }
 
 interface ActorSnapshot {
@@ -55,6 +66,7 @@ export function planActorChanges(input: PayoutActorInput): PayoutChange[] {
   const changes: PayoutChange[] = [];
 
   for (const entry of input.entries) {
+    if (entry.reward === "factionReputation") continue;
     if (entry.formula) {
       changes.push({
         reward: entry.reward as PayoutRewardType,
@@ -109,6 +121,7 @@ export async function executePayoutPlan(plan: PayoutPlan): Promise<void> {
   const snapshots = plan.actors.map(createSnapshot);
   const updated: ActorSnapshot[] = [];
   const promptMessages: FoundryChatMessage[] = [];
+  let rollbackJournal: (() => Promise<void>) | null = null;
   try {
     for (const prompt of plan.humanityPrompts)
       promptMessages.push(await createHumanityPrompt(prompt));
@@ -124,6 +137,7 @@ export async function executePayoutPlan(plan: PayoutPlan): Promise<void> {
       );
       if (snapshot) updated.push(snapshot);
     }
+    rollbackJournal = await applyPayoutToJournal(plan);
     await appendPayoutRecord(
       createPayoutRecord({
         createdByUserId: game.user.id,
@@ -138,6 +152,7 @@ export async function executePayoutPlan(plan: PayoutPlan): Promise<void> {
     await Promise.allSettled(
       updated.map(({ actor, update }) => actor.update(update)),
     );
+    if (rollbackJournal) await rollbackJournal().catch(() => undefined);
     await Promise.allSettled(promptMessages.map((message) => message.delete()));
     throw error;
   }

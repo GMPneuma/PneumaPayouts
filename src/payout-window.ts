@@ -1,11 +1,18 @@
 import { MODULE_ID } from "./constants";
 import {
+  buildDiscordMarkdown,
+  getDiscordLinks,
+  showDiscordSummary,
+} from "./discord-summary";
+import {
   executePayoutPlan,
   planActorChanges,
   type CharacterReward,
   type PayoutPlan,
   type RewardEntry,
 } from "./payout-execution";
+import { getPayoutJournalData } from "./payout-journal";
+import type { PayoutChange } from "./payout-record";
 import {
   discoverPlayerAccounts,
   type PlayerAccount,
@@ -72,7 +79,6 @@ export class PayoutWindow extends FormApplication {
 
   override getData(): PayoutWindowData {
     const accounts = discoverPlayerAccounts();
-
     return {
       players: accounts.map(toPlayerView),
       playerCount: accounts.length,
@@ -396,6 +402,9 @@ export class PayoutWindow extends FormApplication {
     const type = entry.querySelector<HTMLSelectElement>("[data-entry-type]");
     const mode = entry.querySelector<HTMLSelectElement>("[data-entry-mode]");
     const amount = entry.querySelector<HTMLInputElement>("[data-entry-amount]");
+    const faction = entry.querySelector<HTMLInputElement>(
+      "[data-entry-faction]",
+    );
     if (!type || !mode || !amount) return;
 
     const humanity =
@@ -404,6 +413,11 @@ export class PayoutWindow extends FormApplication {
     mode.disabled = !humanity;
     amount.disabled = humanity && mode.value !== "fixed";
     amount.placeholder = humanity && mode.value !== "fixed" ? "Dice" : "Amount";
+    if (faction) {
+      const specificReputation = type.value === "specificReputation";
+      faction.hidden = !specificReputation;
+      faction.disabled = !specificReputation;
+    }
   }
 
   async #goToPreview(root: HTMLElement): Promise<void> {
@@ -475,7 +489,9 @@ export class PayoutWindow extends FormApplication {
         const card = document.createElement("article");
         card.className = "preview-recipient";
         const heading = document.createElement("strong");
-        heading.textContent = actor.name;
+        const icon = document.createElement("i");
+        icon.className = "fas fa-user";
+        heading.append(icon, ` ${actor.name}`);
         const list = document.createElement("ul");
         list.className = "preview-list";
         list.append(
@@ -505,6 +521,7 @@ export class PayoutWindow extends FormApplication {
   }
 
   async #buildPlan(root: HTMLElement): Promise<PayoutPlan> {
+    const journalData = getPayoutJournalData();
     const sessionLabel = root
       .querySelector<HTMLInputElement>('[name="sessionLabel"]')
       ?.value.trim();
@@ -537,6 +554,8 @@ export class PayoutWindow extends FormApplication {
 
     const actors: PayoutPlan["actors"] = [];
     const humanityPrompts: PayoutPlan["humanityPrompts"] = [];
+    const factionReputations: PayoutPlan["factionReputations"] = [];
+    const journalChanges: PayoutChange[] = [];
     for (const selected of root.querySelectorAll<HTMLInputElement>(
       "[data-actor-toggle]:checked:not(:disabled)",
     )) {
@@ -565,6 +584,33 @@ export class PayoutWindow extends FormApplication {
         entries,
       });
       for (const entry of entries) {
+        if (entry.reward === "factionReputation") {
+          const faction = entry.faction ?? "";
+          const previous = journalData.factionReputations.find(
+            (record) =>
+              record.actorId === actor.id &&
+              record.faction.toLocaleLowerCase() ===
+                faction.toLocaleLowerCase(),
+          );
+          factionReputations.push({
+            actorId: actor.id,
+            actorName: actor.name,
+            reputation: entry.amount,
+            faction,
+            reason: entry.description,
+          });
+          journalChanges.push({
+            reward: "factionReputation",
+            targetType: "journal",
+            targetId: actor.id,
+            targetName: actor.name,
+            amount: entry.amount - (previous?.reputation ?? 0),
+            previousValue: previous?.reputation ?? 0,
+            newValue: entry.amount,
+            details: { faction, description: entry.description },
+          });
+          continue;
+        }
         if (!entry.formula) continue;
         if (entry.reward !== "humanityGain" && entry.reward !== "humanityLoss")
           throw new Error("Only Humanity entries can use dice.");
@@ -579,24 +625,41 @@ export class PayoutWindow extends FormApplication {
       }
     }
     if (!actors.length) throw new Error("Select at least one recipient.");
+    for (const { participant } of actors) {
+      const previous =
+        journalData.attendance.find(
+          ({ userId }) => userId === participant.userId,
+        )?.sessions ?? 0;
+      journalChanges.push({
+        reward: "attendance",
+        targetType: "user",
+        targetId: participant.userId,
+        targetName: participant.userName,
+        amount: 1,
+        previousValue: previous,
+        newValue: previous + 1,
+      });
+    }
     return {
       sessionLabel,
       notes:
         root.querySelector<HTMLTextAreaElement>('[name="notes"]')?.value ?? "",
       actors,
-      changes: actors.flatMap(planActorChanges),
+      changes: [...actors.flatMap(planActorChanges), ...journalChanges],
       humanityPrompts,
+      factionReputations,
     };
   }
 
   #readRewardEntry(entry: HTMLElement): RewardEntry {
     const type =
       entry.querySelector<HTMLSelectElement>("[data-entry-type]")?.value;
-    if (type === "specificReputation")
-      throw new Error(
-        "Specific Reputation requires the later faction-journal feature and cannot be applied yet.",
-      );
-    const reward = type === "newReputation" ? "reputation" : type;
+    const reward =
+      type === "newReputation"
+        ? "reputation"
+        : type === "specificReputation"
+          ? "factionReputation"
+          : type;
     if (!this.#isCharacterReward(reward))
       throw new Error("Invalid reward type.");
     const mode = entry.querySelector<HTMLSelectElement>("[data-entry-mode]");
@@ -611,10 +674,16 @@ export class PayoutWindow extends FormApplication {
       throw new Error("Humanity amounts cannot be negative.");
     if (reward === "reputation" && amount < 0)
       throw new Error("New Reputation cannot be negative.");
+    const faction = entry
+      .querySelector<HTMLInputElement>("[data-entry-faction]")
+      ?.value.trim();
+    if (reward === "factionReputation" && !faction)
+      throw new Error("Specific Reputation requires a faction name.");
     return {
       reward,
       amount: formula ? 0 : amount,
       formula,
+      faction,
       setValue: reward === "reputation",
       description:
         entry.querySelector<HTMLInputElement>('input[type="text"]')?.value ??
@@ -623,7 +692,12 @@ export class PayoutWindow extends FormApplication {
   }
 
   async #applyPayout(root: HTMLElement): Promise<void> {
-    if (this.#submitting) return;
+    if (this.#submitting) {
+      ui.notifications.warn(
+        "This payout is already being applied. Wait for it to finish before trying again.",
+      );
+      return;
+    }
     if (!this.#plan) {
       ui.notifications.warn("Preview the payout again before applying it.");
       return;
@@ -632,9 +706,12 @@ export class PayoutWindow extends FormApplication {
     this.#submitting = true;
     if (button) button.disabled = true;
     try {
-      await executePayoutPlan(this.#plan);
+      const plan = this.#plan;
+      const discordLinks = getDiscordLinks();
+      await executePayoutPlan(plan);
       ui.notifications.info("Payout applied and recorded successfully.");
       await this.close();
+      showDiscordSummary(buildDiscordMarkdown(plan, discordLinks));
     } catch (error) {
       ui.notifications.error(
         `Payout failed and was rolled back: ${this.#errorMessage(error)}`,
@@ -651,6 +728,7 @@ export class PayoutWindow extends FormApplication {
       "humanityGain",
       "humanityLoss",
       "reputation",
+      "factionReputation",
     ].includes(String(value));
   }
 
@@ -663,6 +741,7 @@ export class PayoutWindow extends FormApplication {
           humanityGain: "Gain Humanity",
           humanityLoss: "Lose Humanity",
           reputation: "Reputation",
+          factionReputation: "Specific Reputation",
         } as Record<string, string>
       )[reward] ?? reward
     );
@@ -695,10 +774,16 @@ export class PayoutWindow extends FormApplication {
     description?: string,
   ): HTMLLIElement {
     const item = document.createElement("li");
-    const value = document.createElement("strong");
-    value.textContent = `${label}: ${amount}`;
-    item.append(value);
-    if (description?.trim()) item.append(` — ${description.trim()}`);
+    const labelElement = document.createElement("span");
+    labelElement.className = "preview-item-label";
+    labelElement.textContent = label;
+    const amountElement = document.createElement("strong");
+    amountElement.className = "preview-item-amount";
+    amountElement.textContent = amount;
+    const descriptionElement = document.createElement("span");
+    descriptionElement.className = "preview-item-description";
+    descriptionElement.textContent = description?.trim() || "No description";
+    item.append(labelElement, amountElement, descriptionElement);
     return item;
   }
 
