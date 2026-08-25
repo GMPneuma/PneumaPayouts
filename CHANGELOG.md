@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.1 - 2026-08-25
+
+- Added a running Current HQ IP total that recalculates from positive and
+  negative HQ journal adjustments, including manually edited rows.
+- Disabled GM acknowledgment and Humanity-roll actions by default, with an
+  explicit per-window control for acting on a player's behalf.
+- Made Actor links visibly underlined and changed the Communal and Primary
+  payout section accents to blue and green.
+
 ## 0.5.0 - 2026-08-25
 
 - Added separate Communal and Primary payout sections, including HQ IP tracking.

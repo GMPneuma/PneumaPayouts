@@ -208,11 +208,11 @@
 }
 
 .pneuma-payouts .communal-payouts {
-  border-left: 3px solid var(--pneuma-accent);
+  border-left: 3px solid #2b6f9f;
 }
 
 .pneuma-payouts .group-payouts {
-  border-left: 3px solid var(--color-border-highlight, #8c6b20);
+  border-left: 3px solid #2f7d3c;
 }
 
 .pneuma-payouts .primary-payouts legend,
@@ -231,7 +231,7 @@
   color: var(--pneuma-accent);
   cursor: pointer;
   font-weight: 700;
-  text-decoration: none;
+  text-decoration: underline;
 }
 
 .pneuma-payouts .actor-sheet-link:hover {
@@ -714,6 +714,32 @@
   gap: 0.65rem;
   overflow-y: auto;
   padding: 0.5rem;
+}
+
+.pneuma-payouts .inbox-gm-actions {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  border: 1px solid var(--color-border-light-primary, #777);
+  border-left: 3px solid var(--pneuma-accent);
+  border-radius: 4px;
+  background: var(--pneuma-panel);
+  padding: 0.45rem 0.55rem;
+}
+
+.pneuma-payouts .inbox-gm-actions input {
+  margin-top: 0.15rem;
+}
+
+.pneuma-payouts .inbox-gm-actions span,
+.pneuma-payouts .inbox-gm-actions small {
+  display: block;
+}
+
+.pneuma-payouts .inbox-gm-actions small {
+  margin-top: 0.1rem;
+  color: var(--color-text-dark-secondary, #777);
+  font-weight: 400;
 }
 
 .pneuma-payouts .inbox-empty {

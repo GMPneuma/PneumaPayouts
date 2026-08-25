@@ -11,6 +11,7 @@ import {
 } from "./payout-inbox";
 import {
   ensurePayoutJournal,
+  registerHqIpTotalHandler,
   registerPayoutJournalSettings,
 } from "./payout-journal";
 import { registerHumanityPromptHandler } from "./humanity-prompts";
@@ -21,6 +22,7 @@ import { registerPayoutWindowControl } from "./window-controls";
 // listener must be registered as soon as the module script is evaluated.
 registerPayoutWindowControl();
 registerHumanityPromptHandler();
+registerHqIpTotalHandler();
 
 Hooks.once("init", () => {
   console.info(`${MODULE_ID} | Initializing`);

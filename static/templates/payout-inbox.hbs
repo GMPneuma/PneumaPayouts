@@ -1,4 +1,13 @@
 <form class="payout-inbox-form">
+  {{#if isGM}}
+    <label class="inbox-gm-actions">
+      <input type="checkbox" data-enable-gm-actions />
+      <span><strong>Enable GM controls for player actions</strong><small>Allows
+          you to roll Humanity and acknowledge payouts on behalf of players.
+          Disabled by default to prevent accidental actions.</small></span>
+    </label>
+  {{/if}}
+
   {{#unless hasItems}}
     <p class="inbox-empty"><i class="fas fa-check-circle"></i>
       Nothing is waiting for you.</p>
@@ -15,6 +24,7 @@
           </div>
           <button
             type="button"
+            data-player-inbox-action
             data-roll-id="{{id}}"
             data-actor-id="{{actorId}}"
           >
@@ -42,7 +52,12 @@
               {{/each}}
             </ul>
           </div>
-          <button type="button" data-ack-id="{{id}}" data-user-id="{{userId}}">
+          <button
+            type="button"
+            data-player-inbox-action
+            data-ack-id="{{id}}"
+            data-user-id="{{userId}}"
+          >
             <i class="fas fa-check"></i>
             Acknowledge
           </button>

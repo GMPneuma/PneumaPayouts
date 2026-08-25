@@ -25,6 +25,7 @@ interface InboxData {
   acknowledgments: PayoutAcknowledgment[];
   hasItems: boolean;
   isGM: boolean;
+  gmActionsEnabled: boolean;
 }
 
 let payoutInbox: PayoutInbox | null = null;
@@ -109,6 +110,8 @@ export async function createPayoutAcknowledgments(
 }
 
 class PayoutInbox extends FormApplication {
+  #gmActionsEnabled = false;
+
   static override get defaultOptions(): ApplicationOptions {
     return {
       ...super.defaultOptions,
@@ -123,6 +126,7 @@ class PayoutInbox extends FormApplication {
   }
 
   override getData(): InboxData {
+    const isGM = Boolean(game.user?.isGM);
     const pendingRolls = collectPendingRolls().map((roll) => ({
       ...roll,
       actionLabel:
@@ -135,7 +139,8 @@ class PayoutInbox extends FormApplication {
       pendingRolls,
       acknowledgments,
       hasItems: pendingRolls.length + acknowledgments.length > 0,
-      isGM: Boolean(game.user?.isGM),
+      isGM,
+      gmActionsEnabled: this.#gmActionsEnabled,
     };
   }
 
@@ -143,6 +148,27 @@ class PayoutInbox extends FormApplication {
     super.activateListeners(html);
     const root = html[0];
     if (!root) return;
+    const gmActionsToggle = root.querySelector<HTMLInputElement>(
+      "[data-enable-gm-actions]",
+    );
+    const playerActionButtons = root.querySelectorAll<HTMLButtonElement>(
+      "[data-player-inbox-action]",
+    );
+    if (game.user?.isGM)
+      playerActionButtons.forEach((button) => {
+        button.disabled = !this.#gmActionsEnabled;
+      });
+    if (gmActionsToggle) {
+      gmActionsToggle.checked = this.#gmActionsEnabled;
+      gmActionsToggle.addEventListener("change", (event) => {
+        this.#gmActionsEnabled = (
+          event.currentTarget as HTMLInputElement
+        ).checked;
+        playerActionButtons.forEach((button) => {
+          button.disabled = !this.#gmActionsEnabled;
+        });
+      });
+    }
     root
       .querySelectorAll<HTMLButtonElement>("[data-roll-id]")
       .forEach((button) =>
@@ -158,6 +184,7 @@ class PayoutInbox extends FormApplication {
   protected override async _updateObject(): Promise<void> {}
 
   async #rollHumanity(button: HTMLButtonElement): Promise<void> {
+    if (!this.#playerActionAllowed()) return;
     const actorId = button.dataset.actorId;
     const rollId = button.dataset.rollId;
     if (!actorId || !rollId) return;
@@ -181,6 +208,7 @@ class PayoutInbox extends FormApplication {
   }
 
   async #acknowledge(button: HTMLButtonElement): Promise<void> {
+    if (!this.#playerActionAllowed()) return;
     const userId = button.dataset.userId;
     const acknowledgmentId = button.dataset.ackId;
     const user = userId
@@ -199,6 +227,14 @@ class PayoutInbox extends FormApplication {
     });
     ui.notifications.info("Payout acknowledged.");
     this.render(true);
+  }
+
+  #playerActionAllowed(): boolean {
+    if (!game.user?.isGM || this.#gmActionsEnabled) return true;
+    ui.notifications.warn(
+      "Enable GM controls at the top of the Inbox to act for a player.",
+    );
+    return false;
   }
 }
 

@@ -9,6 +9,15 @@ declare const Hooks: {
     event: "renderChatMessage",
     callback: (message: FoundryChatMessage, html: FoundryHtml) => void,
   ): number;
+  on(
+    event: "updateJournalEntryPage",
+    callback: (
+      page: FoundryJournalPage,
+      changes: Record<string, unknown>,
+      options: Record<string, unknown>,
+      userId: string,
+    ) => void,
+  ): number;
 };
 
 interface ApplicationOptions {

@@ -2,7 +2,7 @@
   "id": "pneuma-payouts",
   "title": "Pneuma's Payouts",
   "description": "A TypeScript module for Foundry Virtual Tabletop.",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "authors": [
     {
       "name": "Pneuma"
@@ -24,5 +24,5 @@
   "esmodules": ["scripts/pneuma-payouts.js"],
   "styles": ["styles/pneuma-payouts.css"],
   "manifest": "https://github.com/GMPneuma/PneumaPayouts/releases/latest/download/module.json",
-  "download": "https://github.com/GMPneuma/PneumaPayouts/releases/download/v0.5.0/pneuma-payouts-v0.5.0.zip"
+  "download": "https://github.com/GMPneuma/PneumaPayouts/releases/download/v0.5.1/pneuma-payouts-v0.5.1.zip"
 }

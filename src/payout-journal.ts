@@ -48,6 +48,27 @@ const EMPTY_DATA: PayoutJournalData = {
 const JOURNAL_OBSERVER = 2;
 const JOURNAL_OWNER = 3;
 
+export function registerHqIpTotalHandler(): void {
+  Hooks.on("updateJournalEntryPage", (page, changes, _options, userId) => {
+    if (!game.user?.isGM || userId !== game.user.id) return;
+    const journalId = game.settings.get(MODULE_ID, PAYOUT_JOURNAL_ID_SETTING);
+    if (typeof journalId !== "string" || !journalId) return;
+    const journal = game.journal.get(journalId);
+    const hqPage = journal
+      ? Array.from(journal.pages).find(({ name }) => name === "HQ")
+      : undefined;
+    if (hqPage?.id !== page.id) return;
+
+    const changedText = changes["text.content"];
+    const content =
+      typeof changedText === "string" ? changedText : page.text?.content;
+    if (typeof content !== "string") return;
+    const synchronized = synchronizeHqIpTotal(content);
+    if (synchronized !== content)
+      void page.update({ "text.content": synchronized });
+  });
+}
+
 export function registerPayoutJournalSettings(): void {
   game.settings.register(MODULE_ID, PAYOUT_JOURNAL_ID_SETTING, {
     name: "Payout Journal ID",
@@ -214,7 +235,9 @@ async function appendHqIpRows(
     }
     body.append(row);
   }
-  await page.update({ "text.content": template.innerHTML });
+  await page.update({
+    "text.content": synchronizeHqIpTotal(template.innerHTML),
+  });
 }
 
 async function saveAndRender(
@@ -243,7 +266,11 @@ async function renderPayoutJournal(
 }
 
 function renderHqPage(data: PayoutJournalData): string {
-  return `<h2>Purchased Improvements</h2>${table(
+  const total = data.hqIpTransactions.reduce(
+    (sum, { amount }) => sum + amount,
+    0,
+  );
+  return `${renderHqIpTotal(total)}<h2>Purchased Improvements</h2>${table(
     ["Improvement", "IP Spent"],
     data.hqImprovements.map(({ name, ipSpent }) => [name, String(ipSpent)]),
   )}<h2>HQ IP Journal</h2>${table(
@@ -313,7 +340,44 @@ async function migrateExistingHqPage(
       /<thead>\s*(<tr>[\s\S]*?<\/tr>)\s*<\/thead>\s*<tbody>/gi,
       "<tbody>$1",
     );
-  if (migrated !== content) await page.update({ "text.content": migrated });
+  const synchronized = synchronizeHqIpTotal(migrated);
+  if (synchronized !== content)
+    await page.update({ "text.content": synchronized });
+}
+
+function synchronizeHqIpTotal(content: string): string {
+  const template = document.createElement("template");
+  template.innerHTML = content;
+  const headings = Array.from(template.content.querySelectorAll("h2"));
+  const journalHeading = headings.find(
+    ({ textContent }) => textContent?.trim() === "HQ IP Journal",
+  );
+  const journalTable = journalHeading?.nextElementSibling;
+  const rows = Array.from(journalTable?.querySelectorAll("tbody tr") ?? []);
+  const total = rows.slice(1).reduce((sum, row) => {
+    const amount = Number(
+      row.querySelectorAll("td")[1]?.textContent?.trim().replaceAll(",", ""),
+    );
+    return Number.isFinite(amount) ? sum + amount : sum;
+  }, 0);
+
+  const totalValue = template.content.querySelector<HTMLElement>(
+    "[data-pneuma-hq-ip-total]",
+  );
+  if (totalValue) totalValue.textContent = String(total);
+  else {
+    const totalTemplate = document.createElement("template");
+    totalTemplate.innerHTML = renderHqIpTotal(total);
+    template.content.insertBefore(
+      totalTemplate.content,
+      template.content.firstChild,
+    );
+  }
+  return template.innerHTML;
+}
+
+function renderHqIpTotal(total: number): string {
+  return `<h2>Current HQ IP</h2><p><strong data-pneuma-hq-ip-total>${total}</strong></p>`;
 }
 
 function textPage(name: string, content: string, sort: number): object {
