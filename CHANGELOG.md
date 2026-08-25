@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.6 - 2026-08-24
+
+- Compressed the session and target summary into a single compact row.
+- Added descriptions to the primary Money and IP payouts.
+- Added repeatable Money, IP, and signed Humanity adjustments with descriptions.
+- Consolidated Humanity Gain and Loss into one signed adjustment field.
+
 ## 0.1.5 - 2026-08-24
 
 - Added a horizontal individual-payout row for every selected recipient.

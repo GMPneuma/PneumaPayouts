@@ -43,6 +43,8 @@ const ISSUE_LABELS: Record<PlayerDiscoveryIssue, string> = {
 };
 
 export class PayoutWindow extends FormApplication {
+  #additionalEntryIndex = 0;
+
   static override get defaultOptions(): ApplicationOptions {
     return {
       ...super.defaultOptions,
@@ -108,10 +110,17 @@ export class PayoutWindow extends FormApplication {
       ?.addEventListener("click", () => this.#showStep(root, "participants"));
 
     root
-      .querySelectorAll<HTMLSelectElement>("[data-humanity-mode]")
-      .forEach((select) => {
-        this.#syncHumanityMode(select);
-        select.addEventListener("change", () => this.#syncHumanityMode(select));
+      .querySelector<HTMLButtonElement>("[data-add-entry]")
+      ?.addEventListener("click", () => this.#addAdditionalEntry(root));
+    root
+      .querySelector<HTMLElement>("[data-additional-entries]")
+      ?.addEventListener("click", (event) => {
+        const target = event.target;
+        if (!(target instanceof Element)) return;
+        target
+          .closest<HTMLButtonElement>("[data-remove-additional]")
+          ?.closest<HTMLElement>("[data-additional-entry]")
+          ?.remove();
       });
 
     this.#updateSelectionSummary(root);
@@ -216,18 +225,11 @@ export class PayoutWindow extends FormApplication {
     );
     if (sessionSummary) sessionSummary.textContent = sessionLabel.value.trim();
 
-    const recipients = root.querySelector<HTMLUListElement>(
-      "[data-recipient-list]",
-    );
-    if (recipients) {
-      recipients.replaceChildren(
-        ...selectedActors.map((actor) => {
-          const item = document.createElement("li");
-          item.textContent = actor.dataset.actorName ?? actor.value;
-          return item;
-        }),
-      );
-    }
+    const recipients = root.querySelector<HTMLElement>("[data-recipient-list]");
+    if (recipients)
+      recipients.textContent = selectedActors
+        .map((actor) => actor.dataset.actorName ?? actor.value)
+        .join(", ");
 
     this.#populateIndividualPayouts(root, selectedActors);
 
@@ -284,6 +286,33 @@ export class PayoutWindow extends FormApplication {
     container.replaceChildren(...rows);
   }
 
+  #addAdditionalEntry(root: HTMLElement): void {
+    const container = root.querySelector<HTMLElement>(
+      "[data-additional-entries]",
+    );
+    const template = root.querySelector<HTMLTemplateElement>(
+      "[data-additional-entry-template]",
+    );
+    if (!container || !template) return;
+
+    const entry = template.content.firstElementChild?.cloneNode(
+      true,
+    ) as HTMLElement | null;
+    if (!entry) return;
+
+    const index = this.#additionalEntryIndex++;
+    entry
+      .querySelectorAll<HTMLInputElement | HTMLSelectElement>(
+        "[data-additional-field]",
+      )
+      .forEach((field) => {
+        const name = field.dataset.additionalField;
+        if (name) field.name = `additional.${index}.${name}`;
+      });
+
+    container.append(entry);
+  }
+
   #showStep(root: HTMLElement, step: "participants" | "rewards"): void {
     root.querySelectorAll<HTMLElement>("[data-step-panel]").forEach((panel) => {
       panel.hidden = panel.dataset.stepPanel !== step;
@@ -296,16 +325,6 @@ export class PayoutWindow extends FormApplication {
           indicator.dataset.stepIndicator === step,
         );
       });
-  }
-
-  #syncHumanityMode(select: HTMLSelectElement): void {
-    const field = select.closest<HTMLElement>("[data-humanity-field]");
-    const manualInput = field?.querySelector<HTMLInputElement>(
-      "[data-humanity-manual]",
-    );
-    if (!manualInput) return;
-
-    manualInput.disabled = select.value !== "manual";
   }
 
   #deduplicateActor(root: HTMLElement, selected: HTMLInputElement): void {

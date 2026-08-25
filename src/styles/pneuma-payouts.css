@@ -112,95 +112,78 @@
   margin-bottom: 0.6rem;
 }
 
-.pneuma-payouts .reward-context {
+.pneuma-payouts .reward-summary {
   display: flex;
-  flex-direction: column;
-  gap: 0.8rem;
-  border-right: 1px solid var(--color-border-light-primary, #777);
-  padding: 0.4rem 0.75rem 0.4rem 0.25rem;
+  align-items: baseline;
+  gap: 1rem;
+  margin-bottom: 0.35rem;
+  border-bottom: 1px solid var(--color-border-light-primary, #777);
+  padding: 0.2rem 0.3rem;
+  font-size: 0.8rem;
 }
 
-.pneuma-payouts .reward-context section {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
+.pneuma-payouts .reward-summary > span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.pneuma-payouts .session-name {
-  font-size: 1.15rem;
-}
-
-.pneuma-payouts .eyebrow {
-  color: var(--color-text-dark-secondary, #777);
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.pneuma-payouts .recipient-summary ul {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  margin: 0.2rem 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.pneuma-payouts .recipient-summary li {
-  border-bottom: 1px dotted var(--color-border-light-primary, #777);
-  padding: 0.15rem 0;
-}
-
-.pneuma-payouts .group-rewards {
+.pneuma-payouts .primary-payouts,
+.pneuma-payouts .additional-payouts {
   margin: 0;
   border: 1px solid var(--color-border-light-primary, #777);
   border-radius: 4px;
   padding: 0.5rem 0.65rem 0.65rem;
 }
 
-.pneuma-payouts .group-rewards legend {
+.pneuma-payouts .primary-payouts legend,
+.pneuma-payouts .additional-payouts legend {
   padding: 0 0.35rem;
   font-weight: 700;
 }
 
-.pneuma-payouts .group-rewards p {
-  margin: 0 0 0.5rem;
-}
-
-.pneuma-payouts .reward-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
-}
-
-.pneuma-payouts .reward-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  font-weight: 600;
-}
-
-.pneuma-payouts .reward-field > input {
-  width: 100%;
-  text-align: right;
-}
-
-.pneuma-payouts .humanity-inputs {
+.pneuma-payouts .primary-payout-row {
   display: grid;
-  grid-template-columns: minmax(4rem, 1fr) auto minmax(5.5rem, 1fr);
+  grid-template-columns: 5.5rem 5rem minmax(8rem, 1fr);
   align-items: center;
   gap: 0.4rem;
+  margin-bottom: 0.45rem;
 }
 
-.pneuma-payouts .humanity-inputs > span {
-  color: var(--color-text-dark-secondary, #777);
-  font-size: 0.75rem;
-  font-weight: 400;
+.pneuma-payouts .primary-payout-row:last-child {
+  margin-bottom: 0;
 }
 
-.pneuma-payouts .humanity-inputs input {
+.pneuma-payouts .primary-payout-row input[type="number"],
+.pneuma-payouts .additional-entry input[type="number"] {
   text-align: right;
+}
+
+.pneuma-payouts .additional-payouts [data-additional-entries] {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.pneuma-payouts .additional-entry {
+  display: grid;
+  grid-template-columns: 7rem 4.5rem minmax(8rem, 1fr) 1.8rem;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.pneuma-payouts .add-entry {
+  width: auto;
+  margin: 0.4rem 0 0;
+  padding: 0.2rem 0.5rem;
+}
+
+.pneuma-payouts .remove-entry {
+  width: 1.8rem;
+  margin: 0;
+  padding: 0.15rem;
+  color: var(--color-level-error, #a00);
 }
 
 .pneuma-payouts .individual-rewards {

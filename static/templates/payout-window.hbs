@@ -127,88 +127,73 @@
   </section>
 
   <section data-step-panel="rewards" hidden>
+    <header class="reward-summary">
+      <span><b>Session:</b> <strong data-session-summary></strong></span>
+      <span><b>Targets:</b> <span data-recipient-list></span></span>
+    </header>
+
     <div class="reward-layout">
-      <aside class="reward-context">
-        <section>
-          <span class="eyebrow">Session</span>
-          <strong class="session-name" data-session-summary></strong>
-        </section>
+      <fieldset class="primary-payouts">
+        <legend>Primary payout</legend>
 
-        <section class="recipient-summary">
-          <span class="eyebrow">Recipients</span>
-          <ul data-recipient-list></ul>
-        </section>
-      </aside>
+        <label class="primary-payout-row">
+          <span><i class="fas fa-coins"></i> Money</span>
+          <input type="number" name="groupMoney" value="0" step="1" />
+          <input
+            type="text"
+            name="groupMoneyDescription"
+            placeholder="Description"
+          />
+        </label>
 
-      <fieldset class="group-rewards">
-        <legend>Group payout</legend>
-        <p>Each selected Actor receives these amounts.</p>
+        <label class="primary-payout-row">
+          <span><i class="fas fa-graduation-cap"></i> IP</span>
+          <input type="number" name="groupIp" value="0" step="1" />
+          <input
+            type="text"
+            name="groupIpDescription"
+            placeholder="Description"
+          />
+        </label>
+      </fieldset>
 
-        <div class="reward-fields">
-          <label class="reward-field">
-            <span><i class="fas fa-coins"></i> Money</span>
-            <input type="number" name="groupMoney" value="0" step="1" />
-          </label>
+      <fieldset class="additional-payouts">
+        <legend>Additional entries</legend>
+        <div data-additional-entries></div>
+        <button type="button" class="add-entry" data-add-entry>
+          <i class="fas fa-plus"></i>
+          Add entry
+        </button>
 
-          <label class="reward-field">
-            <span><i class="fas fa-graduation-cap"></i> IP</span>
-            <input type="number" name="groupIp" value="0" step="1" />
-          </label>
-
-          <div class="reward-field" data-humanity-field>
-            <span><i class="fas fa-heart"></i> Humanity Gain</span>
-            <div class="humanity-inputs">
-              <input
-                type="number"
-                name="groupHumanityGainManual"
-                value="0"
-                min="0"
-                step="1"
-                aria-label="Manual Humanity Gain"
-                data-humanity-manual
-              />
-              <span>or</span>
-              <select
-                name="groupHumanityGainDice"
-                aria-label="Humanity Gain dice"
-                data-humanity-mode
-              >
-                <option value="manual">Manual</option>
-                <option value="1d6">1d6</option>
-                <option value="2d6">2d6</option>
-                <option value="3d6">3d6</option>
-                <option value="4d6">4d6</option>
-              </select>
-            </div>
+        <template data-additional-entry-template>
+          <div class="additional-entry" data-additional-entry>
+            <select aria-label="Reward type" data-additional-field="type">
+              <option value="money">Money</option>
+              <option value="ip">IP</option>
+              <option value="humanity">Humanity</option>
+            </select>
+            <input
+              type="number"
+              value="0"
+              step="1"
+              aria-label="Adjustment amount"
+              data-additional-field="amount"
+            />
+            <input
+              type="text"
+              placeholder="Description"
+              aria-label="Entry description"
+              data-additional-field="description"
+            />
+            <button
+              type="button"
+              class="remove-entry"
+              title="Remove entry"
+              aria-label="Remove entry"
+              data-remove-additional
+            ><i class="fas fa-trash"></i></button>
           </div>
-
-          <div class="reward-field" data-humanity-field>
-            <span><i class="fas fa-heart-crack"></i> Humanity Loss</span>
-            <div class="humanity-inputs">
-              <input
-                type="number"
-                name="groupHumanityLossManual"
-                value="0"
-                min="0"
-                step="1"
-                aria-label="Manual Humanity Loss"
-                data-humanity-manual
-              />
-              <span>or</span>
-              <select
-                name="groupHumanityLossDice"
-                aria-label="Humanity Loss dice"
-                data-humanity-mode
-              >
-                <option value="manual">Manual</option>
-                <option value="1d6">1d6</option>
-                <option value="2d6">2d6</option>
-                <option value="3d6">3d6</option>
-                <option value="4d6">4d6</option>
-              </select>
-            </div>
-          </div>
-        </div>
+        </template>
       </fieldset>
     </div>
 
