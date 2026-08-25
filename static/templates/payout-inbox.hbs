@@ -49,7 +49,11 @@
             <ul class="inbox-awards">
               {{#each awards}}
                 <li>
-                  {{#if img}}<img src="{{img}}" alt="" />{{/if}}
+                  {{#if img}}
+                    <img src="{{img}}" alt="" />
+                  {{else}}
+                    <i class="{{icon}} inbox-award-icon"></i>
+                  {{/if}}
                   <span>{{text}}</span>
                 </li>
               {{/each}}

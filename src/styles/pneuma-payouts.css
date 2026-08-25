@@ -970,7 +970,15 @@
   display: flex;
   align-items: center;
   gap: 0.35rem;
+  list-style: none;
   margin-bottom: 0.15rem;
+}
+
+.pneuma-payouts .inbox-award-icon {
+  width: 1.6rem;
+  flex: 0 0 1.6rem;
+  color: var(--pneuma-accent, #8f2830);
+  text-align: center;
 }
 
 .pneuma-payouts .inbox-awards img {
@@ -978,6 +986,7 @@
   height: 1.6rem;
   flex: 0 0 1.6rem;
   border: 0;
+  vertical-align: middle;
   object-fit: contain;
 }
 

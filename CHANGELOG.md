@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.3 - 2026-08-25
+
+- Added compact reward-type icons to every Payout Inbox award.
+- Preserved actual Item artwork for Item awards.
+- Added icon inference for acknowledgments created by earlier module versions.
+
 ## 0.5.2 - 2026-08-25
 
 - Added configurable Payout Container support with functional Communal Money

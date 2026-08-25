@@ -23,6 +23,7 @@ export interface PayoutAcknowledgment {
 export interface PayoutAcknowledgmentAward {
   text: string;
   img?: string;
+  icon?: string;
 }
 
 interface InboxData {
@@ -286,9 +287,14 @@ function getAcknowledgments(user: FoundryUser): PayoutAcknowledgment[] {
         awards: Array.isArray(entry.awards)
           ? entry.awards.map((award) =>
               typeof award === "string"
-                ? { text: award }
+                ? { text: award, icon: iconForAwardText(award) }
                 : isAcknowledgmentAward(award)
-                  ? structuredClone(award)
+                  ? {
+                      ...structuredClone(award),
+                      icon:
+                        award.icon ??
+                        (award.img ? undefined : iconForAwardText(award.text)),
+                    }
                   : { text: "Payout detail unavailable." },
             )
           : [
@@ -345,7 +351,8 @@ function isAcknowledgmentAward(
   const award = value as Record<string, unknown>;
   return (
     typeof award.text === "string" &&
-    (award.img === undefined || typeof award.img === "string")
+    (award.img === undefined || typeof award.img === "string") &&
+    (award.icon === undefined || typeof award.icon === "string")
   );
 }
 
@@ -381,6 +388,37 @@ function formatPayoutChange(
     text: `${label}: ${result}${description ? ` — ${description}` : ""}`,
     ...(change.reward === "item" && typeof change.details?.img === "string"
       ? { img: change.details.img }
-      : {}),
+      : { icon: iconForReward(change.reward) }),
   };
+}
+
+function iconForReward(reward: string): string {
+  return (
+    {
+      money: "fas fa-coins",
+      ip: "fas fa-star",
+      hqIp: "fas fa-building",
+      humanityGain: "fas fa-heart",
+      humanityLoss: "fas fa-heart-crack",
+      reputation: "fas fa-medal",
+      factionReputation: "fas fa-flag",
+      downtime: "fas fa-clock",
+      item: "fas fa-box-open",
+    }[reward] ?? "fas fa-circle"
+  );
+}
+
+function iconForAwardText(text: string): string {
+  const label = text.split(":", 1)[0]?.trim().toLowerCase() ?? "";
+  if (label.startsWith("money")) return iconForReward("money");
+  if (label.startsWith("hq ip")) return iconForReward("hqIp");
+  if (label === "ip") return iconForReward("ip");
+  if (label.startsWith("humanity gain")) return iconForReward("humanityGain");
+  if (label.startsWith("humanity loss")) return iconForReward("humanityLoss");
+  if (label.startsWith("specific reputation"))
+    return iconForReward("factionReputation");
+  if (label.startsWith("reputation")) return iconForReward("reputation");
+  if (label.startsWith("downtime")) return iconForReward("downtime");
+  if (label.startsWith("item")) return iconForReward("item");
+  return "fas fa-circle";
 }
