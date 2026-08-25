@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.9 - 2026-08-25
+
+- Fixed recipient cards shrinking and overlapping in the payout Preview.
+- Reworked Discord Markdown into shared group awards followed by compact
+  mention-led individual payout bullets.
+- Added Discord User ID, individual Role ID, and whole-crew Role ID mappings.
+- Added a setting to enable or disable the post-payout Discord Markdown dialog.
+- Added a persistent player/GM Payout Inbox backed by Actor and User flags.
+- Added uniquely tracked Humanity rolls shared between chat and the Inbox.
+- Added optional player payout acknowledgments with GM-visible status.
+
 ## 0.1.8 - 2026-08-25
 
 - Fixed reopening the payout window after completing an earlier payout.

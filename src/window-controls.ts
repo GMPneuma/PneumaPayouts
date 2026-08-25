@@ -1,5 +1,6 @@
 import { MODULE_ID } from "./constants";
 import { PayoutWindow } from "./payout-window";
+import { hasInboxItemsForCurrentUser, openPayoutInbox } from "./payout-inbox";
 
 let payoutWindow: PayoutWindow | null = null;
 
@@ -15,11 +16,18 @@ export function openPayoutWindow(): void {
 
 export function registerPayoutWindowControl(): void {
   Hooks.on("getSceneControlButtons", (controls: SceneControl[]) => {
-    if (!game.user?.isGM) return;
-
     const tokenControls = controls.find(({ name }) => name === "token");
     if (!tokenControls) return;
 
+    tokenControls.tools.push({
+      name: `${MODULE_ID}-inbox`,
+      title: "Open Payout Inbox",
+      icon: `fas fa-inbox${hasInboxItemsForCurrentUser() ? " pneuma-inbox-pending" : ""}`,
+      button: true,
+      visible: true,
+      onClick: openPayoutInbox,
+    });
+    if (!game.user?.isGM) return;
     tokenControls.tools.push({
       name: MODULE_ID,
       title: "Open Pneuma's Payouts",

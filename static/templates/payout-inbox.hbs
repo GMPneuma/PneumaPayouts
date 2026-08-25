@@ -1,0 +1,59 @@
+<form class="payout-inbox-form">
+  {{#unless hasItems}}
+    <p class="inbox-empty"><i class="fas fa-check-circle"></i>
+      Nothing is waiting for you.</p>
+  {{/unless}}
+
+  {{#if pendingRolls.length}}
+    <section class="inbox-section">
+      <h3><i class="fas fa-dice-d6"></i> Pending Humanity Rolls</h3>
+      {{#each pendingRolls}}
+        <article class="inbox-item">
+          <div>
+            <strong>{{actorName}} — {{actionLabel}} {{formula}}</strong>
+            <p>{{description}}</p>
+          </div>
+          <button
+            type="button"
+            data-roll-id="{{id}}"
+            data-actor-id="{{actorId}}"
+          >
+            <i class="fas fa-dice-d6"></i>
+            Roll
+          </button>
+        </article>
+      {{/each}}
+    </section>
+  {{/if}}
+
+  {{#if acknowledgments.length}}
+    <section class="inbox-section">
+      <h3><i class="fas fa-receipt"></i>
+        {{#if isGM}}Payout Acknowledgments{{else}}Payouts Awaiting
+          Acknowledgment{{/if}}</h3>
+      {{#each acknowledgments}}
+        <article class="inbox-item">
+          <div>
+            <strong>{{userName}} — {{sessionLabel}}</strong>
+            <p>{{actorName}}</p>
+          </div>
+          {{#if pending}}
+            <button
+              type="button"
+              data-ack-id="{{id}}"
+              data-user-id="{{userId}}"
+            >
+              <i class="fas fa-check"></i>
+              Acknowledge
+            </button>
+          {{else}}
+            <span class="inbox-status inbox-status--done"><i
+                class="fas fa-check-circle"
+              ></i>
+              {{statusLabel}}</span>
+          {{/if}}
+        </article>
+      {{/each}}
+    </section>
+  {{/if}}
+</form>

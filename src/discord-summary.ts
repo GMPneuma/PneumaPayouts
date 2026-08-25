@@ -1,9 +1,27 @@
-import { DISCORD_LINKS_SETTING, MODULE_ID } from "./constants";
+import {
+  DISCORD_LINKS_SETTING,
+  DISCORD_MARKDOWN_ENABLED_SETTING,
+  MODULE_ID,
+} from "./constants";
 import type { PayoutPlan } from "./payout-execution";
 
-export type DiscordLinks = Record<string, string>;
+export interface DiscordLink {
+  kind: "user" | "role";
+  id: string;
+}
+
+export type DiscordLinks = Record<string, DiscordLink>;
+const CREW_LINK_KEY = "__everyone__";
 
 export function registerDiscordLinks(): void {
+  game.settings.register(MODULE_ID, DISCORD_MARKDOWN_ENABLED_SETTING, {
+    name: "Show Discord Markdown after payout",
+    hint: "Open a copy-ready Discord summary after a payout is applied.",
+    scope: "client",
+    config: true,
+    type: Boolean,
+    default: true,
+  });
   game.settings.register(MODULE_ID, DISCORD_LINKS_SETTING, {
     name: "Discord User Links",
     hint: "Maps Foundry users to Discord user IDs for payout summaries.",
@@ -22,8 +40,20 @@ export function registerDiscordLinks(): void {
   });
 }
 
+export function isDiscordMarkdownEnabled(): boolean {
+  return (
+    game.settings.get(MODULE_ID, DISCORD_MARKDOWN_ENABLED_SETTING) !== false
+  );
+}
+
 interface DiscordLinksConfigData {
-  players: Array<{ userId: string; userName: string; discordUserId: string }>;
+  crewRoleId: string;
+  players: Array<{
+    userId: string;
+    userName: string;
+    discordId: string;
+    mentionKind: "user" | "role";
+  }>;
 }
 
 class DiscordLinksConfig extends FormApplication {
@@ -42,36 +72,46 @@ class DiscordLinksConfig extends FormApplication {
   override getData(): DiscordLinksConfigData {
     const links = getDiscordLinks();
     return {
+      crewRoleId: links[CREW_LINK_KEY]?.id ?? "",
       players: Array.from(game.users)
         .filter(({ isGM }) => !isGM)
         .map(({ id, name }) => ({
           userId: id,
           userName: name,
-          discordUserId: links[id] ?? "",
+          discordId: links[id]?.id ?? "",
+          mentionKind: links[id]?.kind === "role" ? "role" : "user",
         })),
     };
+  }
+
+  override activateListeners(html: FoundryHtml): void {
+    super.activateListeners(html);
+    html[0]
+      ?.querySelectorAll<HTMLSelectElement>("[data-mention-kind]")
+      .forEach((select) => {
+        select.value = select.dataset.selected ?? "user";
+      });
   }
 
   protected override async _updateObject(
     _event: Event,
     formData: Record<string, unknown>,
   ): Promise<void> {
-    const nested = formData.links;
-    const values =
-      typeof nested === "object" && nested !== null
-        ? (nested as Record<string, unknown>)
-        : Object.fromEntries(
-            Object.entries(formData)
-              .filter(([key]) => key.startsWith("links."))
-              .map(([key, value]) => [key.slice(6), value]),
-          );
+    const ids = formMap(formData, "ids");
+    const kinds = formMap(formData, "kinds");
     const links: DiscordLinks = {};
-    for (const [userId, rawValue] of Object.entries(values)) {
+    for (const [userId, rawValue] of Object.entries(ids)) {
       const discordId = String(rawValue ?? "").trim();
       if (!discordId) continue;
       if (!/^\d{15,22}$/.test(discordId))
-        throw new Error("Discord User IDs must contain 15–22 digits.");
-      links[userId] = discordId;
+        throw new Error("Discord user and role IDs must contain 15–22 digits.");
+      links[userId] = {
+        kind:
+          userId === CREW_LINK_KEY || kinds[userId] === "role"
+            ? "role"
+            : "user",
+        id: discordId,
+      };
     }
     await setDiscordLinks(links);
     ui.notifications.info("Discord links saved.");
@@ -83,9 +123,23 @@ export function getDiscordLinks(): DiscordLinks {
   if (typeof value !== "object" || value === null || Array.isArray(value))
     return {};
   return Object.fromEntries(
-    Object.entries(value).filter(
-      (entry): entry is [string, string] => typeof entry[1] === "string",
-    ),
+    Object.entries(value).flatMap(([userId, link]) => {
+      if (typeof link === "string")
+        return [[userId, { kind: "user" as const, id: link }]];
+      if (typeof link !== "object" || link === null) return [];
+      const candidate = link as Record<string, unknown>;
+      if (typeof candidate.id !== "string") return [];
+      return [
+        [
+          userId,
+          {
+            kind:
+              candidate.kind === "role" ? ("role" as const) : ("user" as const),
+            id: candidate.id,
+          },
+        ],
+      ];
+    }),
   );
 }
 
@@ -99,26 +153,44 @@ export function buildDiscordMarkdown(
 ): string {
   const lines = [`## ${plan.sessionLabel}`, ""];
   if (plan.notes.trim()) lines.push(plan.notes.trim(), "");
+
+  const groupEntries = plan.actors[0]?.entries.filter(
+    ({ scope }) => scope === "group",
+  );
+  if (groupEntries?.length) {
+    lines.push("**Group awards**");
+    const crewLink = links[CREW_LINK_KEY];
+    const crewMention = crewLink ? `<@&${crewLink.id}>` : "everyone";
+    for (const entry of groupEntries) {
+      const amount = entry.formula ?? formatAdjustment(entry.amount);
+      lines.push(
+        `- Each ${crewMention} — **${rewardLabel(entry.reward)}:** ${amount}${entry.description.trim() ? ` — ${entry.description.trim()}` : ""}`,
+      );
+    }
+    lines.push("");
+  }
+
   for (const { actor, participant } of plan.actors) {
-    const mention = links[participant.userId]
-      ? `<@${links[participant.userId]}>`
+    const link = links[participant.userId];
+    const mention = link
+      ? link.kind === "role"
+        ? `<@&${link.id}>`
+        : `<@${link.id}>`
       : participant.userName;
-    lines.push(`### ${mention} — ${actor.name}`);
     const changes = plan.changes.filter(
-      ({ targetId }) => targetId === actor.id,
+      ({ targetId, details }) =>
+        targetId === actor.id && details?.scope === "individual",
     );
-    if (!changes.length) lines.push("- No character payout changes");
-    for (const change of changes) {
+    if (!changes.length) continue;
+    const awards = changes.map((change) => {
       const description = String(change.details?.description ?? "").trim();
       const result = change.details?.pendingPlayerRoll
         ? `${String(change.details.formula)} (player roll pending)`
         : `${change.previousValue} → ${change.newValue} (${formatAdjustment(change.amount)})`;
       const faction = String(change.details?.faction ?? "").trim();
-      lines.push(
-        `- **${rewardLabel(change.reward)}${faction ? ` (${faction})` : ""}:** ${result}${description ? ` — ${description}` : ""}`,
-      );
-    }
-    lines.push("");
+      return `**${rewardLabel(change.reward)}${faction ? ` (${faction})` : ""}:** ${result}${description ? ` — ${description}` : ""}`;
+    });
+    lines.push(`- ${mention} — **${actor.name}:** ${awards.join("; ")}`);
   }
   return lines.join("\n").trim();
 }
@@ -173,7 +245,22 @@ function rewardLabel(reward: string): string {
         humanityGain: "Humanity Gain",
         humanityLoss: "Humanity Loss",
         reputation: "Reputation",
+        factionReputation: "Specific Reputation",
       } as Record<string, string>
     )[reward] ?? reward
+  );
+}
+
+function formMap(
+  formData: Record<string, unknown>,
+  prefix: string,
+): Record<string, unknown> {
+  const nested = formData[prefix];
+  if (typeof nested === "object" && nested !== null)
+    return nested as Record<string, unknown>;
+  return Object.fromEntries(
+    Object.entries(formData)
+      .filter(([key]) => key.startsWith(`${prefix}.`))
+      .map(([key, value]) => [key.slice(prefix.length + 1), value]),
   );
 }

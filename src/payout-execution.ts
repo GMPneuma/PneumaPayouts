@@ -1,9 +1,17 @@
 import { appendPayoutRecord } from "./payout-ledger";
+import { MODULE_ID } from "./constants";
 import {
   applyPayoutToJournal,
   type FactionReputationRecord,
 } from "./payout-journal";
-import { createHumanityPrompt, type HumanityPrompt } from "./humanity-prompts";
+import {
+  createHumanityPrompt,
+  createPendingHumanityRoll,
+  getPendingHumanityRolls,
+  type HumanityPrompt,
+  type PendingHumanityRoll,
+} from "./humanity-prompts";
+import { createPayoutAcknowledgments } from "./payout-inbox";
 import {
   createPayoutRecord,
   type PayoutChange,
@@ -26,6 +34,7 @@ export interface RewardEntry {
   setValue?: boolean;
   formula?: string;
   faction?: string;
+  scope: "group" | "individual";
 }
 
 export interface PayoutActorInput {
@@ -80,6 +89,7 @@ export function planActorChanges(input: PayoutActorInput): PayoutChange[] {
           description: entry.description,
           formula: entry.formula,
           pendingPlayerRoll: true,
+          scope: entry.scope,
         },
       });
       continue;
@@ -110,6 +120,7 @@ export function planActorChanges(input: PayoutActorInput): PayoutChange[] {
         description: entry.description,
         formula: entry.formula ?? "",
         requestedAmount: entry.amount,
+        scope: entry.scope,
       },
     });
   }
@@ -118,41 +129,54 @@ export function planActorChanges(input: PayoutActorInput): PayoutChange[] {
 
 export async function executePayoutPlan(plan: PayoutPlan): Promise<void> {
   if (!game.user?.isGM) throw new Error("Only a GM can apply payouts.");
+  const record = createPayoutRecord({
+    createdByUserId: game.user.id,
+    createdByUserName: game.user.name,
+    sessionLabel: plan.sessionLabel,
+    notes: plan.notes,
+    participants: plan.actors.map(({ participant }) => participant),
+    changes: plan.changes,
+  });
+  const pendingRolls = plan.humanityPrompts.map((prompt) =>
+    createPendingHumanityRoll(prompt, record.id),
+  );
   const snapshots = plan.actors.map(createSnapshot);
   const updated: ActorSnapshot[] = [];
   const promptMessages: FoundryChatMessage[] = [];
   let rollbackJournal: (() => Promise<void>) | null = null;
+  let rollbackAcknowledgments: (() => Promise<void>) | null = null;
   try {
-    for (const prompt of plan.humanityPrompts)
-      promptMessages.push(await createHumanityPrompt(prompt));
     for (const actorInput of plan.actors) {
       const changes = plan.changes.filter(
         ({ targetId }) => targetId === actorInput.actor.id,
       );
       await actorInput.actor.update(
-        buildActorUpdate(actorInput.actor, changes),
+        buildActorUpdate(
+          actorInput.actor,
+          changes,
+          pendingRolls.filter(({ actorId }) => actorId === actorInput.actor.id),
+        ),
       );
       const snapshot = snapshots.find(
         ({ actor }) => actor === actorInput.actor,
       );
       if (snapshot) updated.push(snapshot);
     }
+    for (const prompt of pendingRolls)
+      promptMessages.push(await createHumanityPrompt(prompt));
     rollbackJournal = await applyPayoutToJournal(plan);
-    await appendPayoutRecord(
-      createPayoutRecord({
-        createdByUserId: game.user.id,
-        createdByUserName: game.user.name,
-        sessionLabel: plan.sessionLabel,
-        notes: plan.notes,
-        participants: plan.actors.map(({ participant }) => participant),
-        changes: plan.changes,
-      }),
+    rollbackAcknowledgments = await createPayoutAcknowledgments(
+      record.id,
+      plan,
     );
+    await appendPayoutRecord(record);
   } catch (error) {
     await Promise.allSettled(
       updated.map(({ actor, update }) => actor.update(update)),
     );
     if (rollbackJournal) await rollbackJournal().catch(() => undefined);
+    if (rollbackAcknowledgments)
+      await rollbackAcknowledgments().catch(() => undefined);
     await Promise.allSettled(promptMessages.map((message) => message.delete()));
     throw error;
   }
@@ -161,8 +185,14 @@ export async function executePayoutPlan(plan: PayoutPlan): Promise<void> {
 function buildActorUpdate(
   actor: FoundryActor,
   changes: PayoutChange[],
+  pendingRolls: PendingHumanityRoll[],
 ): Record<string, unknown> {
-  const update: Record<string, unknown> = {};
+  const update: Record<string, unknown> = {
+    [`flags.${MODULE_ID}.pendingHumanityRolls`]: [
+      ...getPendingHumanityRolls(actor),
+      ...pendingRolls,
+    ],
+  };
   for (const change of changes) {
     if (change.newValue === null) continue;
     if (change.reward === "humanityGain" || change.reward === "humanityLoss") {
@@ -206,6 +236,8 @@ function createSnapshot(input: PayoutActorInput): ActorSnapshot {
       ),
       "system.stats.emp": structuredClone(valueAt(actor.system, "stats.emp")),
       "system.reputation": structuredClone(valueAt(actor.system, "reputation")),
+      [`flags.${MODULE_ID}.pendingHumanityRolls`]:
+        getPendingHumanityRolls(actor),
     },
   };
 }

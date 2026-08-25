@@ -60,8 +60,8 @@ interface FoundrySettingConfig {
   hint?: string;
   scope: "client" | "world";
   config: boolean;
-  type: ObjectConstructor | StringConstructor;
-  default: object | string;
+  type: ObjectConstructor | StringConstructor | BooleanConstructor;
+  default: object | string | boolean;
 }
 
 interface FoundrySettingsMenuConfig {
@@ -84,6 +84,7 @@ interface FoundryActor {
   system: unknown;
   testUserPermission(user: FoundryUser, permission: "OWNER"): boolean;
   update(data: Record<string, unknown>): Promise<unknown>;
+  getFlag(namespace: string, key: string): unknown;
 }
 
 interface FoundryUser {
@@ -92,6 +93,8 @@ interface FoundryUser {
   isGM: boolean;
   active: boolean;
   character: FoundryActor | null;
+  getFlag(namespace: string, key: string): unknown;
+  update(data: Record<string, unknown>): Promise<unknown>;
 }
 
 declare const game: {
@@ -118,6 +121,7 @@ declare const game: {
   journal: Iterable<FoundryJournalEntry> & {
     get(id: string): FoundryJournalEntry | undefined;
   };
+  messages: Iterable<FoundryChatMessage>;
 };
 
 declare const ui: {

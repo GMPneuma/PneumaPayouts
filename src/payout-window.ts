@@ -2,6 +2,7 @@ import { MODULE_ID } from "./constants";
 import {
   buildDiscordMarkdown,
   getDiscordLinks,
+  isDiscordMarkdownEnabled,
   showDiscordSummary,
 } from "./discord-summary";
 import {
@@ -542,6 +543,7 @@ export class PayoutWindow extends FormApplication {
         groupEntries.push({
           reward,
           amount,
+          scope: "group",
           description:
             root.querySelector<HTMLInputElement>(`[name="${descriptionName}"]`)
               ?.value ?? "",
@@ -550,7 +552,7 @@ export class PayoutWindow extends FormApplication {
     for (const entry of root.querySelectorAll<HTMLElement>(
       "[data-additional-entries] [data-payout-entry]",
     ))
-      groupEntries.push(this.#readRewardEntry(entry));
+      groupEntries.push({ ...this.#readRewardEntry(entry), scope: "group" });
 
     const actors: PayoutPlan["actors"] = [];
     const humanityPrompts: PayoutPlan["humanityPrompts"] = [];
@@ -571,7 +573,10 @@ export class PayoutWindow extends FormApplication {
       ).find(({ dataset }) => dataset.actorId === actor.id);
       const individualEntries = Array.from(
         row?.querySelectorAll<HTMLElement>("[data-payout-entry]") ?? [],
-      ).map((entry) => this.#readRewardEntry(entry));
+      ).map((entry) => ({
+        ...this.#readRewardEntry(entry),
+        scope: "individual" as const,
+      }));
       const entries = [...groupEntries, ...individualEntries];
       actors.push({
         actor,
@@ -607,7 +612,11 @@ export class PayoutWindow extends FormApplication {
             amount: entry.amount - (previous?.reputation ?? 0),
             previousValue: previous?.reputation ?? 0,
             newValue: entry.amount,
-            details: { faction, description: entry.description },
+            details: {
+              faction,
+              description: entry.description,
+              scope: "individual",
+            },
           });
           continue;
         }
@@ -682,6 +691,7 @@ export class PayoutWindow extends FormApplication {
     return {
       reward,
       amount: formula ? 0 : amount,
+      scope: "individual",
       formula,
       faction,
       setValue: reward === "reputation",
@@ -711,7 +721,8 @@ export class PayoutWindow extends FormApplication {
       await executePayoutPlan(plan);
       ui.notifications.info("Payout applied and recorded successfully.");
       await this.close();
-      showDiscordSummary(buildDiscordMarkdown(plan, discordLinks));
+      if (isDiscordMarkdownEnabled())
+        showDiscordSummary(buildDiscordMarkdown(plan, discordLinks));
     } catch (error) {
       ui.notifications.error(
         `Payout failed and was rolled back: ${this.#errorMessage(error)}`,

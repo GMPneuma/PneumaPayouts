@@ -9,8 +9,31 @@ export interface HumanityPrompt {
   description: string;
 }
 
-interface HumanityPromptFlags extends HumanityPrompt {
-  resolved: boolean;
+export interface PendingHumanityRoll extends HumanityPrompt {
+  id: string;
+  payoutRecordId: string;
+  createdAt: string;
+}
+
+export function createPendingHumanityRoll(
+  prompt: HumanityPrompt,
+  payoutRecordId: string,
+): PendingHumanityRoll {
+  return {
+    ...prompt,
+    id: crypto.randomUUID(),
+    payoutRecordId,
+    createdAt: new Date().toISOString(),
+  };
+}
+
+export function getPendingHumanityRolls(
+  actor: FoundryActor,
+): PendingHumanityRoll[] {
+  const value = actor.getFlag(MODULE_ID, "pendingHumanityRolls");
+  return Array.isArray(value)
+    ? value.filter(isPromptFlags).map((entry) => structuredClone(entry))
+    : [];
 }
 
 export function registerHumanityPromptHandler(): void {
@@ -23,8 +46,10 @@ export function registerHumanityPromptHandler(): void {
     const flags = message.getFlag(MODULE_ID, "humanityPrompt");
     if (
       !isPromptFlags(flags) ||
-      flags.resolved ||
-      game.user?.id !== flags.userId
+      !getPendingHumanityRollsForId(flags.actorId).some(
+        ({ id }) => id === flags.id,
+      ) ||
+      (!game.user?.isGM && game.user?.id !== flags.userId)
     ) {
       button.disabled = true;
       return;
@@ -36,8 +61,13 @@ export function registerHumanityPromptHandler(): void {
   });
 }
 
+function getPendingHumanityRollsForId(actorId: string): PendingHumanityRoll[] {
+  const actor = game.actors.get(actorId);
+  return actor ? getPendingHumanityRolls(actor) : [];
+}
+
 export async function createHumanityPrompt(
-  prompt: HumanityPrompt,
+  prompt: PendingHumanityRoll,
 ): Promise<FoundryChatMessage> {
   const action = prompt.reward === "humanityGain" ? "gain" : "lose";
   const description = escapeHtml(prompt.description || "Pneuma payout");
@@ -53,7 +83,7 @@ export async function createHumanityPrompt(
     content: `<div class="pneuma-humanity-prompt"><p><strong>${escapeHtml(prompt.actorName)}</strong> must roll <strong>${prompt.formula}</strong> to ${action} Humanity.</p><p>${description}</p><button type="button" data-pneuma-humanity-roll><i class="fas fa-dice-d6"></i> Roll Humanity</button></div>`,
     flags: {
       [MODULE_ID]: {
-        humanityPrompt: { ...prompt, resolved: false },
+        humanityPrompt: prompt,
       },
     },
   });
@@ -62,42 +92,63 @@ export async function createHumanityPrompt(
 async function resolvePrompt(
   message: FoundryChatMessage,
   button: HTMLButtonElement,
-  prompt: HumanityPromptFlags,
+  prompt: PendingHumanityRoll,
 ): Promise<void> {
   button.disabled = true;
-  let updatedActor: FoundryActor | null = null;
-  let previousHumanity: number | null = null;
   try {
-    const actor = game.actors.get(prompt.actorId);
-    if (!actor) throw new Error("The payout Actor no longer exists.");
-    const roll = await new Roll(prompt.formula).evaluate();
-    const humanity = readHumanity(actor);
-    updatedActor = actor;
-    previousHumanity = humanity.value;
-    const signed = prompt.reward === "humanityGain" ? roll.total : -roll.total;
-    const newValue = Math.min(humanity.max, humanity.value + signed);
-    await actor.update({
-      "system.derivedStats.humanity.value": newValue,
-      "system.stats.emp.value": Math.floor(newValue / 10),
-    });
+    const result = await resolvePendingHumanityRoll(prompt.actorId, prompt.id);
     await message.update({
-      content: `<div class="pneuma-humanity-prompt pneuma-humanity-prompt--resolved"><p><strong>${escapeHtml(actor.name)}</strong> rolled <strong>${roll.total}</strong> (${prompt.formula}).</p><p>Humanity: <strong>${humanity.value} → ${newValue}</strong></p><p>${escapeHtml(prompt.description)}</p></div>`,
-      [`flags.${MODULE_ID}.humanityPrompt.resolved`]: true,
+      content: resolvedContent(result),
+      [`flags.${MODULE_ID}.humanityPrompt.resolvedAt`]:
+        new Date().toISOString(),
     });
   } catch (error) {
-    if (updatedActor && previousHumanity !== null) {
-      await updatedActor
-        .update({
-          "system.derivedStats.humanity.value": previousHumanity,
-          "system.stats.emp.value": Math.floor(previousHumanity / 10),
-        })
-        .catch(() => undefined);
-    }
     button.disabled = false;
     ui.notifications.error(
       error instanceof Error ? error.message : String(error),
     );
   }
+}
+
+export interface HumanityRollResult {
+  prompt: PendingHumanityRoll;
+  rollTotal: number;
+  previousHumanity: number;
+  newHumanity: number;
+}
+
+export async function resolvePendingHumanityRoll(
+  actorId: string,
+  rollId: string,
+): Promise<HumanityRollResult> {
+  const actor = game.actors.get(actorId);
+  if (!actor) throw new Error("The payout Actor no longer exists.");
+  const pendingRolls = getPendingHumanityRolls(actor);
+  const prompt = pendingRolls.find(({ id }) => id === rollId);
+  if (!prompt) throw new Error("This Humanity roll has already been resolved.");
+  if (!game.user?.isGM && game.user?.id !== prompt.userId)
+    throw new Error("This Humanity roll belongs to another player.");
+  const roll = await new Roll(prompt.formula).evaluate();
+  const humanity = readHumanity(actor);
+  const signed = prompt.reward === "humanityGain" ? roll.total : -roll.total;
+  const newValue = Math.min(humanity.max, humanity.value + signed);
+  await actor.update({
+    "system.derivedStats.humanity.value": newValue,
+    "system.stats.emp.value": Math.floor(newValue / 10),
+    [`flags.${MODULE_ID}.pendingHumanityRolls`]: pendingRolls.filter(
+      ({ id }) => id !== rollId,
+    ),
+  });
+  return {
+    prompt,
+    rollTotal: roll.total,
+    previousHumanity: humanity.value,
+    newHumanity: newValue,
+  };
+}
+
+export function resolvedContent(result: HumanityRollResult): string {
+  return `<div class="pneuma-humanity-prompt pneuma-humanity-prompt--resolved"><p><strong>${escapeHtml(result.prompt.actorName)}</strong> rolled <strong>${result.rollTotal}</strong> (${result.prompt.formula}).</p><p>Humanity: <strong>${result.previousHumanity} → ${result.newHumanity}</strong></p><p>${escapeHtml(result.prompt.description)}</p></div>`;
 }
 
 function readHumanity(actor: FoundryActor): { value: number; max: number } {
@@ -112,14 +163,15 @@ function readHumanity(actor: FoundryActor): { value: number; max: number } {
   return { value: humanity.value, max: humanity.max };
 }
 
-function isPromptFlags(value: unknown): value is HumanityPromptFlags {
+function isPromptFlags(value: unknown): value is PendingHumanityRoll {
   if (typeof value !== "object" || value === null) return false;
   const flags = value as Record<string, unknown>;
   return (
     typeof flags.actorId === "string" &&
     typeof flags.userId === "string" &&
     typeof flags.formula === "string" &&
-    typeof flags.resolved === "boolean"
+    typeof flags.id === "string" &&
+    typeof flags.payoutRecordId === "string"
   );
 }
 

@@ -4,6 +4,11 @@ import { MODULE_ID } from "./constants";
 import { registerDiscordLinks } from "./discord-summary";
 import { registerPayoutLedger } from "./payout-ledger";
 import {
+  hasInboxItemsForCurrentUser,
+  openPayoutInbox,
+  registerPayoutInboxSettings,
+} from "./payout-inbox";
+import {
   ensurePayoutJournal,
   registerPayoutJournalSettings,
 } from "./payout-journal";
@@ -21,6 +26,7 @@ Hooks.once("init", () => {
   registerPayoutLedger();
   registerDiscordLinks();
   registerPayoutJournalSettings();
+  registerPayoutInboxSettings();
 
   const module = game.modules.get(MODULE_ID);
   if (module) module.api = pneumaPayoutsApi;
@@ -29,4 +35,5 @@ Hooks.once("init", () => {
 Hooks.once("ready", () => {
   console.info(`${MODULE_ID} | Ready`);
   if (game.user?.isGM) void ensurePayoutJournal();
+  if (!game.user?.isGM && hasInboxItemsForCurrentUser()) openPayoutInbox();
 });
