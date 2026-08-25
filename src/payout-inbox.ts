@@ -17,7 +17,12 @@ export interface PayoutAcknowledgment {
   actorName: string;
   createdAt: string;
   acknowledgedAt: string | null;
-  awards: string[];
+  awards: PayoutAcknowledgmentAward[];
+}
+
+export interface PayoutAcknowledgmentAward {
+  text: string;
+  img?: string;
 }
 
 interface InboxData {
@@ -279,8 +284,18 @@ function getAcknowledgments(user: FoundryUser): PayoutAcknowledgment[] {
     ? value.filter(isAcknowledgment).map((entry) => ({
         ...structuredClone(entry),
         awards: Array.isArray(entry.awards)
-          ? entry.awards
-          : ["Payout details unavailable for this older acknowledgment."],
+          ? entry.awards.map((award) =>
+              typeof award === "string"
+                ? { text: award }
+                : isAcknowledgmentAward(award)
+                  ? structuredClone(award)
+                  : { text: "Payout detail unavailable." },
+            )
+          : [
+              {
+                text: "Payout details unavailable for this older acknowledgment.",
+              },
+            ],
       }))
     : [];
 }
@@ -323,7 +338,20 @@ function isAcknowledgment(value: unknown): value is PayoutAcknowledgment {
   );
 }
 
-function formatPayoutChange(change: PayoutPlan["changes"][number]): string {
+function isAcknowledgmentAward(
+  value: unknown,
+): value is PayoutAcknowledgmentAward {
+  if (typeof value !== "object" || value === null) return false;
+  const award = value as Record<string, unknown>;
+  return (
+    typeof award.text === "string" &&
+    (award.img === undefined || typeof award.img === "string")
+  );
+}
+
+function formatPayoutChange(
+  change: PayoutPlan["changes"][number],
+): PayoutAcknowledgmentAward {
   const labels: Record<string, string> = {
     money: "Money",
     ip: "IP",
@@ -332,11 +360,27 @@ function formatPayoutChange(change: PayoutPlan["changes"][number]): string {
     humanityLoss: "Humanity Loss",
     reputation: "Reputation",
     factionReputation: "Specific Reputation",
+    item: "Item",
+    downtime: "Downtime",
   };
   const faction = String(change.details?.faction ?? "").trim();
   const description = String(change.details?.description ?? "").trim();
-  const result = change.details?.pendingPlayerRoll
-    ? `${String(change.details.formula)} — pending roll`
-    : `${change.previousValue} → ${change.newValue} (${change.amount >= 0 ? "+" : ""}${change.amount})`;
-  return `${labels[change.reward] ?? change.reward}${faction ? ` (${faction})` : ""}: ${result}${description ? ` — ${description}` : ""}`;
+  const result =
+    change.reward === "item"
+      ? `×${change.amount}`
+      : change.reward === "downtime"
+        ? `${change.amount} ${Math.abs(change.amount) === 1 ? "day" : "days"}`
+        : change.details?.pendingPlayerRoll
+          ? `${String(change.details.formula)} — pending roll`
+          : `${change.previousValue} → ${change.newValue} (${change.amount >= 0 ? "+" : ""}${change.amount})`;
+  const label =
+    change.reward === "item"
+      ? `Item: ${String(change.details?.itemName ?? "Unknown")}`
+      : `${labels[change.reward] ?? change.reward}${faction ? ` (${faction})` : ""}`;
+  return {
+    text: `${label}: ${result}${description ? ` — ${description}` : ""}`,
+    ...(change.reward === "item" && typeof change.details?.img === "string"
+      ? { img: change.details.img }
+      : {}),
+  };
 }

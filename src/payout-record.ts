@@ -10,6 +10,8 @@ export const PAYOUT_REWARD_TYPES = [
   "communalMoney",
   "hqIp",
   "attendance",
+  "item",
+  "downtime",
 ] as const;
 
 export type PayoutRewardType = (typeof PAYOUT_REWARD_TYPES)[number];

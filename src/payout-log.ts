@@ -68,20 +68,46 @@ function payoutPageName(plan: PayoutPlan): string {
 
 function renderPayoutPage(plan: PayoutPlan): string {
   const recipients = plan.actors.map(({ actor }) => actor.name).join(", ");
-  const communalRows = plan.hqIpTransactions.map(({ amount, reason }) => [
-    "HQ IP",
-    formatAmount(amount),
-    reason,
-  ]);
+  const communalRows = [
+    ...(plan.payoutContainer &&
+    (plan.payoutContainer.moneyAmount || plan.communalItems.length)
+      ? [["Payout Container", plan.payoutContainer.actor.name, ""]]
+      : []),
+    ...plan.hqIpTransactions.map(({ amount, reason }) => [
+      "HQ IP",
+      formatAmount(amount),
+      reason,
+    ]),
+    ...(plan.payoutContainer?.moneyAmount
+      ? [
+          [
+            "Money",
+            formatAmount(plan.payoutContainer.moneyAmount),
+            plan.payoutContainer.moneyDescription,
+          ],
+        ]
+      : []),
+    ...plan.communalItems.map((item) => [
+      `Item: ${item.name}`,
+      `×${item.quantity}`,
+      item.description,
+    ]),
+  ];
   const primaryRows =
     plan.actors[0]?.entries
       .filter(({ scope }) => scope === "group")
       .map((entry) => entryRow(entry)) ?? [];
-  const individualRows = plan.actors.flatMap(({ actor, entries }) =>
-    entries
+  const individualRows = plan.actors.flatMap(({ actor, entries, items }) => [
+    ...entries
       .filter(({ scope }) => scope === "individual")
       .map((entry) => [actor.name, ...entryRow(entry)]),
-  );
+    ...items.map((item) => [
+      actor.name,
+      `Item: ${item.name}`,
+      `×${item.quantity}`,
+      item.description,
+    ]),
+  ]);
 
   return [
     metadata("In-Game Date", plan.inGameDate || "Not specified"),
@@ -100,7 +126,9 @@ function entryRow(entry: RewardEntry): string[] {
   const faction = entry.faction?.trim();
   return [
     `${rewardLabel(entry.reward)}${faction ? ` (${faction})` : ""}`,
-    entry.formula ?? formatAmount(entry.amount),
+    entry.reward === "downtime"
+      ? formatDays(entry.amount)
+      : (entry.formula ?? formatAmount(entry.amount)),
     entry.description,
   ];
 }
@@ -133,9 +161,14 @@ function rewardLabel(reward: string): string {
         humanityLoss: "Lose Humanity",
         reputation: "Reputation",
         factionReputation: "Specific Reputation",
+        downtime: "Downtime",
       } as Record<string, string>
     )[reward] ?? reward
   );
+}
+
+function formatDays(amount: number): string {
+  return `${amount} ${Math.abs(amount) === 1 ? "day" : "days"}`;
 }
 
 function formatAmount(amount: number): string {

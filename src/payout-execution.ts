@@ -27,7 +27,8 @@ export type CharacterReward =
   | "humanityGain"
   | "humanityLoss"
   | "reputation"
-  | "factionReputation";
+  | "factionReputation"
+  | "downtime";
 
 export interface RewardEntry {
   reward: CharacterReward;
@@ -39,10 +40,27 @@ export interface RewardEntry {
   scope: "group" | "individual";
 }
 
+export interface PayoutItem {
+  uuid: string;
+  name: string;
+  type: string;
+  img: string;
+  quantity: number;
+  description: string;
+  source: Record<string, unknown>;
+}
+
 export interface PayoutActorInput {
   actor: FoundryActor;
   participant: PayoutParticipant;
   entries: RewardEntry[];
+  items: PayoutItem[];
+}
+
+export interface PayoutContainerInput {
+  actor: FoundryActor;
+  moneyAmount: number;
+  moneyDescription: string;
 }
 
 export interface PayoutPlan {
@@ -54,6 +72,8 @@ export interface PayoutPlan {
   humanityPrompts: HumanityPrompt[];
   factionReputations: FactionReputationRecord[];
   hqIpTransactions: HqIpTransaction[];
+  communalItems: PayoutItem[];
+  payoutContainer: PayoutContainerInput | null;
 }
 
 interface ActorSnapshot {
@@ -80,6 +100,24 @@ export function planActorChanges(input: PayoutActorInput): PayoutChange[] {
 
   for (const entry of input.entries) {
     if (entry.reward === "factionReputation") continue;
+    if (entry.reward === "downtime") {
+      changes.push({
+        reward: "downtime",
+        targetType: "actor",
+        targetId: actor.id,
+        targetName: actor.name,
+        amount: entry.amount,
+        previousValue: null,
+        newValue: null,
+        details: {
+          description: entry.description,
+          scope: entry.scope,
+          displayOnly: true,
+          unit: "days",
+        },
+      });
+      continue;
+    }
     if (entry.formula) {
       changes.push({
         reward: entry.reward as PayoutRewardType,
@@ -147,11 +185,43 @@ export async function executePayoutPlan(plan: PayoutPlan): Promise<void> {
   );
   const snapshots = plan.actors.map(createSnapshot);
   const updated: ActorSnapshot[] = [];
+  const createdItems: Array<{ actor: FoundryActor; ids: string[] }> = [];
+  const containerSnapshot = plan.payoutContainer
+    ? {
+        actor: plan.payoutContainer.actor,
+        wealth: structuredClone(
+          valueAt(plan.payoutContainer.actor.system, "wealth"),
+        ),
+      }
+    : null;
+  let containerUpdated = false;
   const promptMessages: FoundryChatMessage[] = [];
   let rollbackJournal: (() => Promise<void>) | null = null;
   let rollbackAcknowledgments: (() => Promise<void>) | null = null;
   let rollbackPayoutLog: (() => Promise<void>) | null = null;
   try {
+    if (plan.payoutContainer) {
+      const { actor, moneyAmount, moneyDescription } = plan.payoutContainer;
+      if (moneyAmount) {
+        await actor.update(
+          buildContainerMoneyUpdate(
+            actor,
+            moneyAmount,
+            moneyDescription,
+            plan.sessionLabel,
+          ),
+        );
+        containerUpdated = true;
+      }
+      if (plan.communalItems.length) {
+        const created = await actor.createEmbeddedDocuments(
+          "Item",
+          plan.communalItems.flatMap(itemDocumentsForPayout),
+          { CPRsplitStack: true },
+        );
+        createdItems.push({ actor, ids: created.map(({ id }) => id) });
+      }
+    }
     for (const actorInput of plan.actors) {
       const changes = plan.changes.filter(
         ({ targetId }) => targetId === actorInput.actor.id,
@@ -168,6 +238,18 @@ export async function executePayoutPlan(plan: PayoutPlan): Promise<void> {
         ({ actor }) => actor === actorInput.actor,
       );
       if (snapshot) updated.push(snapshot);
+      if (actorInput.items.length) {
+        const itemData = actorInput.items.flatMap(itemDocumentsForPayout);
+        const created = await actorInput.actor.createEmbeddedDocuments(
+          "Item",
+          itemData,
+          { CPRsplitStack: true },
+        );
+        createdItems.push({
+          actor: actorInput.actor,
+          ids: created.map(({ id }) => id),
+        });
+      }
     }
     for (const prompt of pendingRolls)
       promptMessages.push(await createHumanityPrompt(prompt));
@@ -182,6 +264,15 @@ export async function executePayoutPlan(plan: PayoutPlan): Promise<void> {
     await Promise.allSettled(
       updated.map(({ actor, update }) => actor.update(update)),
     );
+    await Promise.allSettled(
+      createdItems.map(({ actor, ids }) =>
+        actor.deleteEmbeddedDocuments("Item", ids),
+      ),
+    );
+    if (containerUpdated && containerSnapshot)
+      await containerSnapshot.actor
+        .update({ "system.wealth": containerSnapshot.wealth })
+        .catch(() => undefined);
     if (rollbackJournal) await rollbackJournal().catch(() => undefined);
     if (rollbackAcknowledgments)
       await rollbackAcknowledgments().catch(() => undefined);
@@ -189,6 +280,27 @@ export async function executePayoutPlan(plan: PayoutPlan): Promise<void> {
     await Promise.allSettled(promptMessages.map((message) => message.delete()));
     throw error;
   }
+}
+
+function buildContainerMoneyUpdate(
+  actor: FoundryActor,
+  amount: number,
+  description: string,
+  sessionLabel: string,
+): Record<string, unknown> {
+  const previousValue = numberAt(actor.system, "wealth.value");
+  const newValue = previousValue + amount;
+  const transactions = structuredClone(
+    arrayAt(actor.system, "wealth.transactions"),
+  );
+  transactions.push([
+    `${amount >= 0 ? "Increased" : "Decreased"} wealth by ${Math.abs(amount)} (total ${newValue})`,
+    `${sessionLabel.trim() || "Payout"} - ${description.trim() || "No description"}`,
+  ]);
+  return {
+    "system.wealth.value": newValue,
+    "system.wealth.transactions": transactions,
+  };
 }
 
 function buildActorUpdate(
@@ -231,6 +343,21 @@ function buildActorUpdate(
     update[`system.${path}.transactions`] = transactions;
   }
   return update;
+}
+
+function itemDocumentsForPayout(item: PayoutItem): Record<string, unknown>[] {
+  const source = structuredClone(item.source);
+  delete source._id;
+  const system = source.system;
+  if (
+    typeof system === "object" &&
+    system !== null &&
+    typeof (system as Record<string, unknown>).amount === "number"
+  ) {
+    (system as Record<string, unknown>).amount = item.quantity;
+    return [source];
+  }
+  return Array.from({ length: item.quantity }, () => structuredClone(source));
 }
 
 function createSnapshot(input: PayoutActorInput): ActorSnapshot {

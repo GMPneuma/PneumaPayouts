@@ -9,11 +9,16 @@ import {
   executePayoutPlan,
   planActorChanges,
   type CharacterReward,
+  type PayoutItem,
   type PayoutPlan,
   type RewardEntry,
 } from "./payout-execution";
 import { getPayoutJournalData } from "./payout-journal";
 import { getLastPayoutDate, saveLastPayoutDate } from "./payout-date";
+import {
+  getDefaultPayoutContainerId,
+  getPayoutContainers,
+} from "./payout-container";
 import type { PayoutChange } from "./payout-record";
 import {
   discoverPlayerAccounts,
@@ -49,6 +54,8 @@ interface PayoutWindowData {
   playerCount: number;
   activePlayerCount: number;
   inGameDate: string;
+  payoutContainers: Array<{ actorId: string; actorName: string }>;
+  defaultPayoutContainerId: string;
 }
 
 const ISSUE_LABELS: Record<PlayerDiscoveryIssue, string> = {
@@ -64,6 +71,7 @@ export class PayoutWindow extends FormApplication {
   #individualEntryIndex = 0;
   #plan: PayoutPlan | null = null;
   #submitting = false;
+  #droppedItems = new Map<string, PayoutItem>();
 
   static override get defaultOptions(): ApplicationOptions {
     return {
@@ -87,6 +95,11 @@ export class PayoutWindow extends FormApplication {
       playerCount: accounts.length,
       activePlayerCount: accounts.filter(({ active }) => active).length,
       inGameDate: getLastPayoutDate(),
+      payoutContainers: getPayoutContainers().map(({ id, name }) => ({
+        actorId: id,
+        actorName: name,
+      })),
+      defaultPayoutContainerId: getDefaultPayoutContainerId(),
     };
   }
 
@@ -97,8 +110,11 @@ export class PayoutWindow extends FormApplication {
     if (!root) return;
 
     root.addEventListener("click", (event) => this.#openActorLink(event));
+    root.addEventListener("dragover", (event) => this.#allowItemDrop(event));
+    root.addEventListener("drop", (event) => void this.#handleItemDrop(event));
 
     this.#initializeSelection(root);
+    this.#initializePayoutContainer(root);
     root
       .querySelector<HTMLInputElement>('[name="inGameDate"]')
       ?.addEventListener("change", (event) => {
@@ -171,6 +187,9 @@ export class PayoutWindow extends FormApplication {
     root
       .querySelector<HTMLElement>("[data-additional-entries]")
       ?.addEventListener("change", (event) => this.#syncEntryControls(event));
+    root
+      .querySelector<HTMLElement>("[data-communal-item-drop]")
+      ?.addEventListener("click", (event) => this.#removeEntry(event));
 
     root
       .querySelector<HTMLElement>("[data-individual-payouts]")
@@ -224,6 +243,28 @@ export class PayoutWindow extends FormApplication {
         if (selectedActorIds.has(actorId)) actorToggle.checked = false;
         else selectedActorIds.add(actorId);
       });
+  }
+
+  #initializePayoutContainer(root: HTMLElement): void {
+    const select = root.querySelector<HTMLSelectElement>(
+      '[name="payoutContainerId"]',
+    );
+    if (!select) return;
+    select.value = select.dataset.selected ?? "";
+    const synchronize = () => {
+      const link = root.querySelector<HTMLAnchorElement>(
+        "[data-payout-container-link]",
+      );
+      const actor = select.value ? game.actors.get(select.value) : undefined;
+      if (!link) return;
+      link.hidden = !actor;
+      link.dataset.actorId = actor?.id ?? "";
+      link.textContent = actor ? `Open ${actor.name}` : "";
+      link.title = actor ? `Open ${actor.name}` : "";
+      this.#plan = null;
+    };
+    select.addEventListener("change", synchronize);
+    synchronize();
   }
 
   #syncUserRow(userToggle: HTMLInputElement): void {
@@ -407,10 +448,257 @@ export class PayoutWindow extends FormApplication {
   #removeEntry(event: Event): void {
     const target = event.target;
     if (!(target instanceof Element)) return;
-    target
+    const entry = target
       .closest<HTMLButtonElement>("[data-remove-entry]")
-      ?.closest<HTMLElement>("[data-payout-entry]")
-      ?.remove();
+      ?.closest<HTMLElement>("[data-payout-entry]");
+    const itemKey = entry?.dataset.itemKey;
+    if (itemKey) this.#droppedItems.delete(itemKey);
+    entry?.remove();
+  }
+
+  #allowItemDrop(event: DragEvent): void {
+    const target = event.target;
+    if (target instanceof Element && target.closest("[data-item-drop-zone]"))
+      event.preventDefault();
+  }
+
+  async #handleItemDrop(event: DragEvent): Promise<void> {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    const zone = target.closest<HTMLElement>("[data-item-drop-zone]");
+    if (!zone) return;
+    event.preventDefault();
+
+    try {
+      const raw = event.dataTransfer?.getData("text/plain");
+      const dropData = raw ? (JSON.parse(raw) as Record<string, unknown>) : {};
+      const uuid = typeof dropData.uuid === "string" ? dropData.uuid : "";
+      if (dropData.type !== "Item" || !uuid)
+        throw new Error("Drop a Foundry Item document here.");
+      const document = await fromUuid(uuid);
+      if (!this.#isFoundryItem(document))
+        throw new Error("The dropped Item document could not be loaded.");
+      const items = await this.#flattenPayoutItems(document, uuid);
+      for (const item of items) this.#appendDroppedItem(zone, item);
+      if (items.length > 1)
+        ui.notifications.info(
+          `${document.name} was added unloaded with ${items.length - 1} linked ${items.length === 2 ? "item" : "items"} listed separately.`,
+        );
+      this.#plan = null;
+    } catch (error) {
+      ui.notifications.warn(this.#errorMessage(error));
+    }
+  }
+
+  #appendDroppedItem(zone: HTMLElement, item: PayoutItem): void {
+    const list = zone.querySelector<HTMLElement>("[data-item-drop-list]");
+    if (!list) return;
+    const key = crypto.randomUUID();
+    this.#droppedItems.set(key, item);
+
+    const entry = document.createElement("div");
+    entry.className = "payout-entry dropped-item-entry";
+    entry.dataset.payoutEntry = "";
+    entry.dataset.itemKey = key;
+    const image = document.createElement("img");
+    image.src = item.img;
+    image.alt = "";
+    const identity = document.createElement("span");
+    identity.className = "dropped-item-identity";
+    const name = document.createElement("strong");
+    name.textContent = item.name;
+    const type = document.createElement("small");
+    type.textContent = item.type;
+    identity.append(name, type);
+    const quantity = document.createElement("input");
+    quantity.type = "number";
+    quantity.min = "1";
+    quantity.max = "99";
+    quantity.step = "1";
+    quantity.value = String(item.quantity);
+    quantity.title = "Quantity";
+    quantity.setAttribute("aria-label", `${item.name} quantity`);
+    quantity.dataset.itemQuantity = "";
+    const description = document.createElement("input");
+    description.type = "text";
+    description.placeholder = "Description";
+    description.setAttribute("aria-label", `${item.name} description`);
+    description.dataset.itemDescription = "";
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "remove-entry";
+    remove.title = "Remove Item";
+    remove.dataset.removeEntry = "";
+    remove.innerHTML = '<i class="fas fa-trash"></i>';
+    entry.append(image, identity, quantity, description, remove);
+    list.append(entry);
+  }
+
+  #readDroppedItems(container: ParentNode | null): PayoutItem[] {
+    return Array.from(
+      container?.querySelectorAll<HTMLElement>("[data-item-key]") ?? [],
+    ).map((entry) => {
+      const item = this.#droppedItems.get(entry.dataset.itemKey ?? "");
+      if (!item) throw new Error("A dropped Item is no longer available.");
+      const quantity = Number(
+        entry.querySelector<HTMLInputElement>("[data-item-quantity]")?.value,
+      );
+      if (!Number.isSafeInteger(quantity) || quantity < 1 || quantity > 99)
+        throw new Error(`${item.name} quantity must be between 1 and 99.`);
+      return {
+        ...item,
+        quantity,
+        description:
+          entry
+            .querySelector<HTMLInputElement>("[data-item-description]")
+            ?.value.trim() ?? "",
+      };
+    });
+  }
+
+  #isFoundryItem(value: unknown): value is FoundryItem {
+    if (typeof value !== "object" || value === null) return false;
+    const item = value as Partial<FoundryItem>;
+    return (
+      typeof item.name === "string" &&
+      typeof item.type === "string" &&
+      typeof item.toObject === "function" &&
+      (item.documentName === undefined || item.documentName === "Item")
+    );
+  }
+
+  async #flattenPayoutItems(
+    root: FoundryItem,
+    rootUuid: string,
+  ): Promise<PayoutItem[]> {
+    const items: PayoutItem[] = [];
+    const visited = new Set<string>();
+
+    const visit = async (
+      item: FoundryItem,
+      uuid: string,
+      quantity = 1,
+    ): Promise<void> => {
+      if (visited.has(uuid)) return;
+      visited.add(uuid);
+      const source = item.toObject();
+      const installedUuids = this.#installedItemUuids(source);
+      const ammo = this.#loadedAmmo(source);
+      items.push({
+        uuid,
+        name: item.name,
+        type: item.type,
+        img: item.img ?? "icons/svg/item-bag.svg",
+        quantity,
+        description: "",
+        source: this.#standaloneItemSource(source),
+      });
+
+      for (const installedUuid of installedUuids) {
+        const installed = await this.#resolveRelatedItem(installedUuid, uuid);
+        if (!installed)
+          throw new Error(
+            `${item.name} has an installed Item that could not be loaded (${installedUuid}). Nothing was added.`,
+          );
+        await visit(installed.document, installed.uuid);
+      }
+
+      if (ammo) {
+        const ammunition = await this.#resolveRelatedItem(ammo.uuid, uuid);
+        if (!ammunition)
+          throw new Error(
+            `${item.name}'s loaded ammunition could not be loaded (${ammo.uuid}). Nothing was added.`,
+          );
+        if (!visited.has(ammunition.uuid))
+          await visit(ammunition.document, ammunition.uuid, ammo.rounds);
+      }
+    };
+
+    await visit(root, rootUuid);
+    return items;
+  }
+
+  async #resolveRelatedItem(
+    reference: string,
+    ownerUuid: string,
+  ): Promise<{ document: FoundryItem; uuid: string } | null> {
+    const candidates = [reference];
+    if (!reference.includes(".")) {
+      const embeddedMarker = ownerUuid.lastIndexOf(".Item.");
+      if (embeddedMarker >= 0)
+        candidates.unshift(
+          `${ownerUuid.slice(0, embeddedMarker)}.Item.${reference}`,
+        );
+      else if (ownerUuid.startsWith("Item."))
+        candidates.unshift(`Item.${reference}`);
+    }
+
+    for (const uuid of new Set(candidates)) {
+      const document = await fromUuid(uuid).catch(() => null);
+      if (this.#isFoundryItem(document)) return { document, uuid };
+    }
+    return null;
+  }
+
+  #installedItemUuids(source: Record<string, unknown>): string[] {
+    const system = this.#objectField(source, "system");
+    const installedItems = this.#objectField(system, "installedItems");
+    const list = installedItems?.list;
+    return Array.isArray(list)
+      ? list.filter(
+          (uuid): uuid is string => typeof uuid === "string" && uuid.length > 0,
+        )
+      : [];
+  }
+
+  #loadedAmmo(
+    source: Record<string, unknown>,
+  ): { uuid: string; rounds: number } | null {
+    const system = this.#objectField(source, "system");
+    const magazine = this.#objectField(system, "magazine");
+    const ammoData = this.#objectField(magazine, "ammoData");
+    const uuid = ammoData?.uuid;
+    const rounds = magazine?.value;
+    return typeof uuid === "string" &&
+      uuid.length > 0 &&
+      typeof rounds === "number" &&
+      Number.isSafeInteger(rounds) &&
+      rounds > 0
+      ? { uuid, rounds }
+      : null;
+  }
+
+  #standaloneItemSource(
+    original: Record<string, unknown>,
+  ): Record<string, unknown> {
+    const source = structuredClone(original);
+    const system = this.#objectField(source, "system");
+    const installedItems = this.#objectField(system, "installedItems");
+    if (installedItems) {
+      installedItems.list = [];
+      if ("usedSlots" in installedItems) installedItems.usedSlots = 0;
+    }
+    if (system && "installedIn" in system) system.installedIn = "";
+    if (system && "isInstalled" in system) system.isInstalled = false;
+    const magazine = this.#objectField(system, "magazine");
+    if (magazine) {
+      magazine.value = 0;
+      magazine.ammoData = { name: "", uuid: "" };
+    }
+    const programs = this.#objectField(system, "programs");
+    if (programs) {
+      programs.installed = [];
+      programs.rezzed = [];
+    }
+    return source;
+  }
+
+  #objectField(value: unknown, key: string): Record<string, unknown> | null {
+    if (typeof value !== "object" || value === null) return null;
+    const result = (value as Record<string, unknown>)[key];
+    return typeof result === "object" && result !== null
+      ? (result as Record<string, unknown>)
+      : null;
   }
 
   #syncEntryControls(event: Event): void {
@@ -482,13 +770,53 @@ export class PayoutWindow extends FormApplication {
     this.#setText(root, "[data-preview-notes]", notes?.value.trim() || "None");
     this.#setText(root, "[data-preview-in-game-date]", this.#plan.inGameDate);
 
+    const communalList = root.querySelector<HTMLElement>(
+      "[data-preview-communal]",
+    );
+    if (communalList) {
+      const items = [
+        ...(this.#plan.payoutContainer &&
+        (this.#plan.payoutContainer.moneyAmount !== 0 ||
+          this.#plan.communalItems.length)
+          ? [
+              this.#createPayoutContainerPreviewItem(
+                this.#plan.payoutContainer.actor,
+              ),
+            ]
+          : []),
+        ...this.#plan.hqIpTransactions.map(({ amount, reason }) =>
+          this.#createPreviewItem("HQ IP", String(amount), reason),
+        ),
+        ...(this.#plan.payoutContainer?.moneyAmount
+          ? [
+              this.#createPreviewItem(
+                "Money",
+                String(this.#plan.payoutContainer.moneyAmount),
+                this.#plan.payoutContainer.moneyDescription,
+              ),
+            ]
+          : []),
+        ...this.#plan.communalItems.map((item) =>
+          this.#createPreviewItem(
+            `Item: ${item.name}`,
+            `×${item.quantity}`,
+            item.description,
+          ),
+        ),
+      ];
+      communalList.replaceChildren(...items);
+      communalList.classList.toggle("preview-list--empty", items.length === 0);
+      if (!items.length)
+        communalList.textContent = "No communal payouts entered.";
+    }
+
     const groupList = root.querySelector<HTMLElement>("[data-preview-group]");
     if (groupList) {
       const items: HTMLElement[] = [];
       const primaryFields = [
         ["Money", "groupMoney", "groupMoneyDescription"],
         ["IP", "groupIp", "groupIpDescription"],
-        ["HQ IP", "groupHqIp", "groupHqIpDescription"],
+        ["Downtime", "groupDowntime", "groupDowntimeDescription"],
       ] as const;
       for (const [label, amountName, descriptionName] of primaryFields) {
         const amount = root.querySelector<HTMLInputElement>(
@@ -499,7 +827,13 @@ export class PayoutWindow extends FormApplication {
         )?.value;
         if (Number(amount) !== 0)
           items.push(
-            this.#createPreviewItem(label, amount ?? "0", description),
+            this.#createPreviewItem(
+              label,
+              label === "Downtime"
+                ? this.#formatDays(Number(amount))
+                : (amount ?? "0"),
+              description,
+            ),
           );
       }
       root
@@ -522,24 +856,37 @@ export class PayoutWindow extends FormApplication {
           ({ targetId }) => targetId === actor.id,
         );
         if (!changes?.length) return [];
-        const card = document.createElement("article");
+        const card = document.createElement("details");
         card.className = "preview-recipient";
-        const heading = document.createElement("strong");
+        card.open = true;
+        const heading = document.createElement("summary");
         const icon = document.createElement("i");
         icon.className = "fas fa-user";
         heading.append(icon, " ", this.#createActorLink(actor.id, actor.name));
         const list = document.createElement("ul");
         list.className = "preview-list";
         list.append(
-          ...changes.map((change) =>
-            this.#createPreviewItem(
-              this.#rewardLabel(change.reward),
-              change.details?.pendingPlayerRoll
-                ? `${String(change.details.formula)} — pending player roll`
-                : `${change.previousValue} → ${change.newValue}`,
+          ...changes.map((change) => {
+            const item = this.#createPreviewItem(
+              change.reward === "item"
+                ? `Item: ${String(change.details?.itemName ?? "Unknown")}`
+                : this.#rewardLabel(change.reward),
+              change.reward === "item"
+                ? `×${change.amount}`
+                : change.reward === "downtime"
+                  ? this.#formatDays(change.amount)
+                  : change.details?.pendingPlayerRoll
+                    ? `${String(change.details.formula)} — pending player roll`
+                    : `${change.previousValue} → ${change.newValue}`,
               String(change.details?.description ?? ""),
-            ),
-          ),
+            );
+            item.classList.add(
+              change.details?.scope === "individual"
+                ? "preview-item--individual"
+                : "preview-item--primary",
+            );
+            return item;
+          }),
         );
         card.append(heading, list);
         return [card];
@@ -566,11 +913,43 @@ export class PayoutWindow extends FormApplication {
       root
         .querySelector<HTMLInputElement>('[name="inGameDate"]')
         ?.value.trim() ?? "";
+    const communalItems = this.#readDroppedItems(
+      root.querySelector("[data-communal-item-drop]"),
+    );
+    const communalMoneyAmount = Number(
+      root.querySelector<HTMLInputElement>('[name="communalMoney"]')?.value,
+    );
+    if (!Number.isSafeInteger(communalMoneyAmount))
+      throw new Error("Communal Money must be a whole number.");
+    const communalMoneyDescription =
+      root
+        .querySelector<HTMLInputElement>('[name="communalMoneyDescription"]')
+        ?.value.trim() ?? "";
+    const payoutContainerId =
+      root.querySelector<HTMLSelectElement>('[name="payoutContainerId"]')
+        ?.value ?? "";
+    const payoutContainerActor = payoutContainerId
+      ? game.actors.get(payoutContainerId)
+      : undefined;
+    if (payoutContainerActor && payoutContainerActor.type !== "container")
+      throw new Error("The selected Payout Container is invalid.");
+    if ((communalMoneyAmount || communalItems.length) && !payoutContainerActor)
+      throw new Error(
+        "Select a Payout Container before adding Communal Money or Items.",
+      );
+    const payoutContainer = payoutContainerActor
+      ? {
+          actor: payoutContainerActor,
+          moneyAmount: communalMoneyAmount,
+          moneyDescription: communalMoneyDescription,
+        }
+      : null;
 
     const groupEntries: RewardEntry[] = [];
     const primary = [
       ["money", "groupMoney", "groupMoneyDescription"],
       ["ip", "groupIp", "groupIpDescription"],
+      ["downtime", "groupDowntime", "groupDowntimeDescription"],
     ] as const;
     for (const [reward, amountName, descriptionName] of primary) {
       const amount = Number(
@@ -578,6 +957,8 @@ export class PayoutWindow extends FormApplication {
       );
       if (!Number.isSafeInteger(amount))
         throw new Error(`${reward} must be a whole number.`);
+      if (reward === "downtime" && amount < 0)
+        throw new Error("Downtime cannot be negative.");
       if (amount !== 0)
         groupEntries.push({
           reward,
@@ -630,11 +1011,16 @@ export class PayoutWindow extends FormApplication {
         root.querySelectorAll<HTMLElement>("[data-individual-row]"),
       ).find(({ dataset }) => dataset.actorId === actor.id);
       const individualEntries = Array.from(
-        row?.querySelectorAll<HTMLElement>("[data-payout-entry]") ?? [],
+        row?.querySelectorAll<HTMLElement>(
+          "[data-individual-entries] [data-payout-entry]",
+        ) ?? [],
       ).map((entry) => ({
         ...this.#readRewardEntry(entry),
         scope: "individual" as const,
       }));
+      const individualItems = this.#readDroppedItems(
+        row?.querySelector("[data-individual-item-drop]") ?? null,
+      );
       const entries = [...groupEntries, ...individualEntries];
       actors.push({
         actor,
@@ -645,7 +1031,26 @@ export class PayoutWindow extends FormApplication {
           actorName: actor.name,
         },
         entries,
+        items: individualItems,
       });
+      for (const item of individualItems)
+        journalChanges.push({
+          reward: "item",
+          targetType: "actor",
+          targetId: actor.id,
+          targetName: actor.name,
+          amount: item.quantity,
+          previousValue: null,
+          newValue: null,
+          details: {
+            itemName: item.name,
+            itemType: item.type,
+            img: item.img,
+            uuid: item.uuid,
+            description: item.description,
+            scope: "individual",
+          },
+        });
       for (const entry of entries) {
         if (entry.reward === "factionReputation") {
           const faction = entry.faction ?? "";
@@ -707,6 +1112,44 @@ export class PayoutWindow extends FormApplication {
         },
       });
     }
+    if (payoutContainer && communalMoneyAmount) {
+      const previousValue = Number(
+        this.#valueAt(payoutContainer.actor.system, "wealth.value"),
+      );
+      if (!Number.isFinite(previousValue))
+        throw new Error("The Payout Container has no valid Money balance.");
+      journalChanges.push({
+        reward: "communalMoney",
+        targetType: "actor",
+        targetId: payoutContainer.actor.id,
+        targetName: payoutContainer.actor.name,
+        amount: communalMoneyAmount,
+        previousValue,
+        newValue: previousValue + communalMoneyAmount,
+        details: {
+          description: communalMoneyDescription,
+          scope: "communal",
+        },
+      });
+    }
+    for (const item of communalItems)
+      journalChanges.push({
+        reward: "item",
+        targetType: "actor",
+        targetId: payoutContainer?.actor.id ?? null,
+        targetName: payoutContainer?.actor.name ?? "Payout Container",
+        amount: item.quantity,
+        previousValue: null,
+        newValue: null,
+        details: {
+          itemName: item.name,
+          itemType: item.type,
+          img: item.img,
+          uuid: item.uuid,
+          description: item.description,
+          scope: "communal",
+        },
+      });
     for (const { participant } of actors) {
       const previous =
         journalData.attendance.find(
@@ -732,6 +1175,8 @@ export class PayoutWindow extends FormApplication {
       humanityPrompts,
       factionReputations,
       hqIpTransactions,
+      communalItems,
+      payoutContainer,
     };
   }
 
@@ -756,6 +1201,8 @@ export class PayoutWindow extends FormApplication {
       throw new Error(`${this.#rewardLabel(reward)} must be a whole number.`);
     if ((reward === "humanityGain" || reward === "humanityLoss") && amount < 0)
       throw new Error("Humanity amounts cannot be negative.");
+    if (reward === "downtime" && amount < 0)
+      throw new Error("Downtime cannot be negative.");
     if (
       (reward === "humanityGain" ||
         reward === "humanityLoss" ||
@@ -826,6 +1273,7 @@ export class PayoutWindow extends FormApplication {
       "humanityLoss",
       "reputation",
       "factionReputation",
+      "downtime",
     ].includes(String(value));
   }
 
@@ -840,6 +1288,8 @@ export class PayoutWindow extends FormApplication {
           humanityLoss: "Lose Humanity",
           reputation: "Reputation",
           factionReputation: "Specific Reputation",
+          item: "Item",
+          downtime: "Downtime",
         } as Record<string, string>
       )[reward] ?? reward
     );
@@ -849,14 +1299,23 @@ export class PayoutWindow extends FormApplication {
     return error instanceof Error ? error.message : String(error);
   }
 
+  #valueAt(value: unknown, path: string): unknown {
+    return path.split(".").reduce<unknown>((current, key) => {
+      if (typeof current !== "object" || current === null) return undefined;
+      return (current as Record<string, unknown>)[key];
+    }, value);
+  }
+
   #previewItemFromEntry(entry: HTMLElement): HTMLLIElement {
     const type = entry.querySelector<HTMLSelectElement>("[data-entry-type]");
     const amount = entry.querySelector<HTMLInputElement>("[data-entry-amount]");
     const mode = entry.querySelector<HTMLSelectElement>("[data-entry-mode]");
     const amountText =
-      mode && !mode.disabled && mode.value !== "fixed"
-        ? mode.value
-        : amount?.value || "0";
+      type?.value === "downtime"
+        ? this.#formatDays(Number(amount?.value || 0))
+        : mode && !mode.disabled && mode.value !== "fixed"
+          ? mode.value
+          : amount?.value || "0";
     return this.#createPreviewItem(
       type?.selectedOptions[0]?.textContent ?? "Payout",
       amountText,
@@ -870,6 +1329,10 @@ export class PayoutWindow extends FormApplication {
         '[data-entry-field="description"], [data-additional-field="description"]',
       )?.value ?? ""
     );
+  }
+
+  #formatDays(amount: number): string {
+    return `${amount} ${Math.abs(amount) === 1 ? "day" : "days"}`;
   }
 
   #createPreviewItem(
@@ -888,6 +1351,18 @@ export class PayoutWindow extends FormApplication {
     descriptionElement.className = "preview-item-description";
     descriptionElement.textContent = description?.trim() || "No description";
     item.append(labelElement, amountElement, descriptionElement);
+    return item;
+  }
+
+  #createPayoutContainerPreviewItem(actor: FoundryActor): HTMLLIElement {
+    const item = this.#createPreviewItem(
+      "Payout Container",
+      actor.name,
+      "Destination for Communal Money and Items",
+    );
+    item
+      .querySelector(".preview-item-amount")
+      ?.replaceChildren(this.#createActorLink(actor.id, actor.name));
     return item;
   }
 

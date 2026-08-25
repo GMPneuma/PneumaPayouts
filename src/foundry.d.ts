@@ -94,8 +94,25 @@ interface FoundryActor {
   sheet?: { render(force?: boolean): unknown };
   testUserPermission(user: FoundryUser, permission: "OWNER"): boolean;
   update(data: Record<string, unknown>): Promise<unknown>;
+  createEmbeddedDocuments(
+    type: "Item",
+    data: Record<string, unknown>[],
+    context?: Record<string, unknown>,
+  ): Promise<FoundryItem[]>;
+  deleteEmbeddedDocuments(type: "Item", ids: string[]): Promise<unknown>;
   getFlag(namespace: string, key: string): unknown;
 }
+
+interface FoundryItem {
+  id: string;
+  name: string;
+  type: string;
+  img?: string;
+  documentName?: string;
+  toObject(): Record<string, unknown>;
+}
+
+declare function fromUuid(uuid: string): Promise<unknown>;
 
 interface FoundryUser {
   id: string;

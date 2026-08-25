@@ -157,11 +157,28 @@ export function buildDiscordMarkdown(
   if (plan.notes.trim()) lines.push(`**Notes:** ${plan.notes.trim()}`);
   if (plan.inGameDate.trim() || plan.notes.trim()) lines.push("");
 
-  if (plan.hqIpTransactions.length) {
+  if (
+    plan.hqIpTransactions.length ||
+    plan.communalItems.length ||
+    plan.payoutContainer?.moneyAmount
+  ) {
     lines.push("**Communal Payout**");
+    if (
+      plan.payoutContainer &&
+      (plan.payoutContainer.moneyAmount || plan.communalItems.length)
+    )
+      lines.push(`- **Payout Container:** ${plan.payoutContainer.actor.name}`);
     for (const entry of plan.hqIpTransactions)
       lines.push(
         `- **HQ IP:** ${formatAdjustment(entry.amount)}${entry.reason.trim() ? ` — ${entry.reason.trim()}` : ""}`,
+      );
+    if (plan.payoutContainer?.moneyAmount)
+      lines.push(
+        `- **Money:** ${formatAdjustment(plan.payoutContainer.moneyAmount)}${plan.payoutContainer.moneyDescription.trim() ? ` — ${plan.payoutContainer.moneyDescription.trim()}` : ""}`,
+      );
+    for (const item of plan.communalItems)
+      lines.push(
+        `- **Item: ${item.name}:** ×${item.quantity}${item.description.trim() ? ` — ${item.description.trim()}` : ""}`,
       );
     lines.push("");
   }
@@ -174,7 +191,10 @@ export function buildDiscordMarkdown(
     const crewLink = links[CREW_LINK_KEY];
     const crewMention = crewLink ? `<@&${crewLink.id}>` : "recipient";
     for (const entry of groupEntries) {
-      const amount = entry.formula ?? formatAdjustment(entry.amount);
+      const amount =
+        entry.reward === "downtime"
+          ? formatDays(entry.amount)
+          : (entry.formula ?? formatAdjustment(entry.amount));
       lines.push(
         `- Each ${crewMention} — **${rewardLabel(entry.reward)}:** ${amount}${entry.description.trim() ? ` — ${entry.description.trim()}` : ""}`,
       );
@@ -196,11 +216,18 @@ export function buildDiscordMarkdown(
     if (!changes.length) continue;
     const awards = changes.map((change) => {
       const description = String(change.details?.description ?? "").trim();
-      const result = change.details?.pendingPlayerRoll
-        ? `${String(change.details.formula)} (player roll pending)`
-        : `${change.previousValue} → ${change.newValue} (${formatAdjustment(change.amount)})`;
+      const result =
+        change.reward === "item"
+          ? `×${change.amount}`
+          : change.details?.pendingPlayerRoll
+            ? `${String(change.details.formula)} (player roll pending)`
+            : `${change.previousValue} → ${change.newValue} (${formatAdjustment(change.amount)})`;
       const faction = String(change.details?.faction ?? "").trim();
-      return `**${rewardLabel(change.reward)}${faction ? ` (${faction})` : ""}:** ${result}${description ? ` — ${description}` : ""}`;
+      const label =
+        change.reward === "item"
+          ? `Item: ${String(change.details?.itemName ?? "Unknown")}`
+          : `${rewardLabel(change.reward)}${faction ? ` (${faction})` : ""}`;
+      return `**${label}:** ${result}${description ? ` — ${description}` : ""}`;
     });
     lines.push(`- ${mention} — **${actor.name}:** ${awards.join("; ")}`);
   }
@@ -259,9 +286,15 @@ function rewardLabel(reward: string): string {
         humanityLoss: "Lose Humanity",
         reputation: "Reputation",
         factionReputation: "Specific Reputation",
+        item: "Item",
+        downtime: "Downtime",
       } as Record<string, string>
     )[reward] ?? reward
   );
+}
+
+function formatDays(amount: number): string {
+  return `${amount} ${Math.abs(amount) === 1 ? "day" : "days"}`;
 }
 
 function formMap(

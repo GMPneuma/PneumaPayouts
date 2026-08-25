@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.5.2 - 2026-08-25
+
+- Added configurable Payout Container support with functional Communal Money
+  and communal Item delivery.
+- Added drag-and-drop Item payouts for Communal and individual awards, including
+  stack-aware quantities, previews, logs, Discord summaries, and Inbox icons.
+- Configured Items are safely flattened: weapons arrive unloaded, installed
+  Items arrive separately and uninstalled, and loaded rounds arrive as a
+  separate ammunition stack.
+- Added always-visible Primary Downtime awards throughout payout records and
+  summaries without changing Actor or journal data.
+- Improved the native Foundry interface with clearer section accents,
+  collapsible recipient previews, scope coloring, and responsive form sizing.
+- Updated the roadmap to reflect the module's current implementation state.
+
 ## 0.5.1 - 2026-08-25
 
 - Added a running Current HQ IP total that recalculates from positive and

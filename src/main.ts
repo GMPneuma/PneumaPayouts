@@ -16,6 +16,7 @@ import {
 } from "./payout-journal";
 import { registerHumanityPromptHandler } from "./humanity-prompts";
 import { registerPayoutDateSetting } from "./payout-date";
+import { registerPayoutContainerSettings } from "./payout-container";
 import { registerPayoutWindowControl } from "./window-controls";
 
 // Foundry v12 requests scene controls before the init hook fires, so this
@@ -33,6 +34,7 @@ Hooks.once("init", () => {
   registerPayoutInboxSettings();
   registerPayoutDateSetting();
   registerPayoutLogSettings();
+  registerPayoutContainerSettings();
 
   const module = game.modules.get(MODULE_ID);
   if (module) module.api = pneumaPayoutsApi;

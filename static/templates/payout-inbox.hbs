@@ -48,7 +48,10 @@
             <p>{{actorName}}</p>
             <ul class="inbox-awards">
               {{#each awards}}
-                <li>{{this}}</li>
+                <li>
+                  {{#if img}}<img src="{{img}}" alt="" />{{/if}}
+                  <span>{{text}}</span>
+                </li>
               {{/each}}
             </ul>
           </div>

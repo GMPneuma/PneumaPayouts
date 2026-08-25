@@ -1,6 +1,6 @@
 {
   "name": "pneuma-payouts",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "private": true,
   "type": "module",
   "description": "A TypeScript Foundry VTT module.",
