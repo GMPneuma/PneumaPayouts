@@ -1,5 +1,6 @@
 import { MODULE_ID, PAYOUT_ACKNOWLEDGMENTS_ENABLED_SETTING } from "./constants";
 import {
+  clearAllPendingHumanityRolls,
   getPendingHumanityRolls,
   resolvePendingHumanityRoll,
   resolvedContent,
@@ -11,6 +12,7 @@ export interface PayoutAcknowledgment {
   id: string;
   payoutRecordId: string;
   sessionLabel: string;
+  inGameDate?: string;
   userId: string;
   userName: string;
   actorId: string;
@@ -22,16 +24,38 @@ export interface PayoutAcknowledgment {
 
 export interface PayoutAcknowledgmentAward {
   text: string;
+  label?: string;
+  value?: string;
+  description?: string;
   img?: string;
   icon?: string;
 }
 
-interface InboxData {
+interface InboxCard {
+  id: string;
+  sessionLabel: string;
+  inGameDate: string;
+  userName: string;
+  actorName: string;
+  createdAt: string;
+  awards: PayoutAcknowledgmentAward[];
   pendingRolls: Array<PendingHumanityRoll & { actionLabel: string }>;
-  acknowledgments: PayoutAcknowledgment[];
+  pendingRollCount: number;
+  statusLabel: string;
+  statusClass: string;
+  acknowledgmentId?: string;
+  userId: string;
+  expanded: boolean;
+  showUserName: boolean;
+}
+
+interface InboxData {
+  cards: InboxCard[];
   hasItems: boolean;
   isGM: boolean;
   gmActionsEnabled: boolean;
+  hasPendingRolls: boolean;
+  hasAcknowledgments: boolean;
 }
 
 let payoutInbox: PayoutInbox | null = null;
@@ -111,6 +135,7 @@ export async function createPayoutAcknowledgments(
             id: crypto.randomUUID(),
             payoutRecordId,
             sessionLabel: plan.sessionLabel,
+            inGameDate: plan.inGameDate,
             userId: user.id,
             userName: user.name,
             actorId: actor.id,
@@ -154,15 +179,20 @@ class PayoutInbox extends FormApplication {
       actionLabel:
         roll.reward === "humanityGain" ? "Gain Humanity" : "Lose Humanity",
     }));
-    const acknowledgments = collectAcknowledgments()
-      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-      .slice(0, 100);
-    return {
+    const cards = buildInboxCards(
+      collectAcknowledgments(),
       pendingRolls,
-      acknowledgments,
-      hasItems: pendingRolls.length + acknowledgments.length > 0,
+      isGM,
+    ).slice(0, 100);
+    return {
+      cards,
+      hasItems: cards.length > 0,
       isGM,
       gmActionsEnabled: this.#gmActionsEnabled,
+      hasPendingRolls: pendingRolls.length > 0,
+      hasAcknowledgments: cards.some(
+        ({ acknowledgmentId }) => acknowledgmentId,
+      ),
     };
   }
 
@@ -170,16 +200,30 @@ class PayoutInbox extends FormApplication {
     super.activateListeners(html);
     const root = html[0];
     if (!root) return;
+    root
+      .querySelectorAll<HTMLDetailsElement>("[data-inbox-expanded]")
+      .forEach((card) => {
+        card.open = card.dataset.inboxExpanded === "true";
+      });
     const gmActionsToggle = root.querySelector<HTMLInputElement>(
       "[data-enable-gm-actions]",
     );
     const playerActionButtons = root.querySelectorAll<HTMLButtonElement>(
       "[data-player-inbox-action]",
     );
+    const gmActionButtons = root.querySelectorAll<HTMLButtonElement>(
+      "[data-gm-inbox-action]",
+    );
     if (game.user?.isGM)
       playerActionButtons.forEach((button) => {
         button.disabled = !this.#gmActionsEnabled;
       });
+    const syncGmButtons = () =>
+      gmActionButtons.forEach((button) => {
+        button.disabled =
+          !this.#gmActionsEnabled || button.dataset.available !== "true";
+      });
+    syncGmButtons();
     if (gmActionsToggle) {
       gmActionsToggle.checked = this.#gmActionsEnabled;
       gmActionsToggle.addEventListener("change", (event) => {
@@ -189,6 +233,7 @@ class PayoutInbox extends FormApplication {
         playerActionButtons.forEach((button) => {
           button.disabled = !this.#gmActionsEnabled;
         });
+        syncGmButtons();
       });
     }
     root
@@ -201,6 +246,15 @@ class PayoutInbox extends FormApplication {
       .forEach((button) =>
         button.addEventListener("click", () => void this.#acknowledge(button)),
       );
+    root
+      .querySelector<HTMLButtonElement>("[data-acknowledge-all]")
+      ?.addEventListener("click", () => void this.#acknowledgeAll());
+    root
+      .querySelector<HTMLButtonElement>("[data-roll-all]")
+      ?.addEventListener("click", () => void this.#rollAll());
+    root
+      .querySelector<HTMLButtonElement>("[data-cancel-all-rolls]")
+      ?.addEventListener("click", () => void this.#cancelAllRolls());
   }
 
   protected override async _updateObject(): Promise<void> {}
@@ -251,6 +305,90 @@ class PayoutInbox extends FormApplication {
     this.render(true);
   }
 
+  async #acknowledgeAll(): Promise<void> {
+    if (!this.#gmBulkActionAllowed()) return;
+    try {
+      const count = await clearAllPayoutAcknowledgments();
+      ui.notifications.info(
+        count
+          ? `${count} payout acknowledgment${count === 1 ? "" : "s"} cleared.`
+          : "There are no payouts awaiting acknowledgment.",
+      );
+      this.render(true);
+    } catch (error) {
+      ui.notifications.error(
+        error instanceof Error ? error.message : String(error),
+      );
+    }
+  }
+
+  async #rollAll(): Promise<void> {
+    if (!this.#gmBulkActionAllowed()) return;
+    const rolls = collectPendingRolls();
+    let resolved = 0;
+    const failures: string[] = [];
+    for (const roll of rolls) {
+      try {
+        const result = await resolvePendingHumanityRoll(roll.actorId, roll.id);
+        await updateRelatedChatMessages(
+          result.prompt.id,
+          resolvedContent(result),
+        );
+        resolved += 1;
+      } catch (error) {
+        failures.push(
+          `${roll.actorName}: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
+    if (resolved)
+      ui.notifications.info(
+        `${resolved} Humanity roll${resolved === 1 ? "" : "s"} resolved.`,
+      );
+    if (failures.length)
+      ui.notifications.error(
+        `${failures.length} Humanity roll${failures.length === 1 ? "" : "s"} failed: ${failures.join("; ")}`,
+      );
+    if (!rolls.length)
+      ui.notifications.info("There are no pending Humanity rolls.");
+    this.render(true);
+  }
+
+  async #cancelAllRolls(): Promise<void> {
+    if (!this.#gmBulkActionAllowed() || !(await confirmCancelAllRolls()))
+      return;
+    try {
+      const rolls = collectPendingRolls();
+      const count = await clearAllPendingHumanityRolls();
+      await Promise.allSettled(
+        rolls.map(({ id }) =>
+          updateRelatedChatMessages(
+            id,
+            '<div class="pneuma-humanity-prompt"><p><strong>Cancelled:</strong> This pending Humanity roll was cancelled by the GM.</p></div>',
+          ),
+        ),
+      );
+      ui.notifications.info(
+        count
+          ? `${count} pending Humanity roll${count === 1 ? "" : "s"} cancelled.`
+          : "There are no pending Humanity rolls.",
+      );
+      this.render(true);
+    } catch (error) {
+      ui.notifications.error(
+        error instanceof Error ? error.message : String(error),
+      );
+    }
+  }
+
+  #gmBulkActionAllowed(): boolean {
+    if (game.user?.isGM && this.#gmActionsEnabled) return true;
+    ui.notifications.warn(
+      "Enable GM controls at the top of the Inbox to use bulk actions.",
+    );
+    return false;
+  }
+
   #playerActionAllowed(): boolean {
     if (!game.user?.isGM || this.#gmActionsEnabled) return true;
     ui.notifications.warn(
@@ -258,6 +396,32 @@ class PayoutInbox extends FormApplication {
     );
     return false;
   }
+}
+
+function confirmCancelAllRolls(): Promise<boolean> {
+  return new Promise((resolve) => {
+    let answered = false;
+    const answer = (value: boolean) => {
+      if (answered) return;
+      answered = true;
+      resolve(value);
+    };
+    new Dialog({
+      title: "Cancel all pending Humanity rolls?",
+      content:
+        "<p>This permanently removes every pending Humanity roll without changing any Actor's Humanity.</p>",
+      buttons: {
+        cancelRolls: {
+          icon: '<i class="fas fa-ban"></i>',
+          label: "Cancel all rolls",
+          callback: () => answer(true),
+        },
+        keep: { label: "Keep rolls", callback: () => answer(false) },
+      },
+      default: "keep",
+      close: () => answer(false),
+    }).render(true);
+  });
 }
 
 function collectPendingRolls(): PendingHumanityRoll[] {
@@ -275,6 +439,74 @@ function collectAcknowledgments(): PayoutAcknowledgment[] {
       ({ acknowledgedAt }) => !acknowledgedAt,
     );
   });
+}
+
+function buildInboxCards(
+  acknowledgments: PayoutAcknowledgment[],
+  pendingRolls: Array<PendingHumanityRoll & { actionLabel: string }>,
+  showUserName: boolean,
+): InboxCard[] {
+  const cards = new Map<string, InboxCard>();
+  const keyFor = (payoutRecordId: string, userId: string, actorId: string) =>
+    `${payoutRecordId}:${userId}:${actorId}`;
+
+  for (const acknowledgment of acknowledgments) {
+    const key = keyFor(
+      acknowledgment.payoutRecordId,
+      acknowledgment.userId,
+      acknowledgment.actorId,
+    );
+    cards.set(key, {
+      id: acknowledgment.id,
+      sessionLabel: acknowledgment.sessionLabel || "Payout",
+      inGameDate: acknowledgment.inGameDate?.trim() || "Date not recorded",
+      userName: acknowledgment.userName,
+      actorName: acknowledgment.actorName,
+      createdAt: acknowledgment.createdAt,
+      awards: acknowledgment.awards,
+      pendingRolls: [],
+      pendingRollCount: 0,
+      statusLabel: "Ready to acknowledge",
+      statusClass: "inbox-card--ready",
+      acknowledgmentId: acknowledgment.id,
+      userId: acknowledgment.userId,
+      expanded: false,
+      showUserName,
+    });
+  }
+
+  for (const roll of pendingRolls) {
+    const key = keyFor(roll.payoutRecordId, roll.userId, roll.actorId);
+    const card = cards.get(key) ?? {
+      id: roll.id,
+      sessionLabel: "Payout",
+      inGameDate: "Date not recorded",
+      userName:
+        Array.from(game.users).find(({ id }) => id === roll.userId)?.name ??
+        "Player",
+      actorName: roll.actorName,
+      createdAt: roll.createdAt,
+      awards: [],
+      pendingRolls: [],
+      pendingRollCount: 0,
+      statusLabel: "",
+      statusClass: "",
+      userId: roll.userId,
+      expanded: false,
+      showUserName,
+    };
+    card.pendingRolls.push(roll);
+    card.pendingRollCount = card.pendingRolls.length;
+    card.statusLabel = `${card.pendingRollCount} Humanity roll${card.pendingRollCount === 1 ? "" : "s"} pending`;
+    card.statusClass = "inbox-card--pending";
+    cards.set(key, card);
+  }
+
+  const sorted = [...cards.values()].sort((a, b) =>
+    b.createdAt.localeCompare(a.createdAt),
+  );
+  if (sorted[0]) sorted[0].expanded = true;
+  return sorted;
 }
 
 async function pruneResolvedAcknowledgments(): Promise<void> {
@@ -402,6 +634,9 @@ function formatPayoutChange(
       : `${labels[change.reward] ?? change.reward}${faction ? ` (${faction})` : ""}`;
   return {
     text: `${label}: ${result}${description ? ` — ${description}` : ""}`,
+    label,
+    value: result,
+    description,
     ...(change.reward === "item" && typeof change.details?.img === "string"
       ? { img: change.details.img }
       : { icon: iconForReward(change.reward) }),

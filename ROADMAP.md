@@ -11,7 +11,8 @@ The order below accounts for both difficulty and dependencies. A later item may
 be mechanically easy but appears later because it relies on the shared payout
 and persistence layers.
 
-Status key: `[x]` complete, `[~]` usable but incomplete, `[ ]` not implemented.
+Status key: `[x]` complete, `[~]` usable but incomplete, `[ ]` not implemented,
+`[-]` intentionally not planned.
 
 ### Milestone 1: Foundation
 
@@ -65,20 +66,21 @@ Status key: `[x]` complete, `[~]` usable but incomplete, `[ ]` not implemented.
   - Maintain an ongoing per-player sessions-played total.
   - Record the most recent session name for each player.
   - Store attendance by Foundry player account rather than Actor.
-- [~] **11. HQ IP pool** — Medium–Hard
+- [x] **11. HQ IP pool** — Medium–Hard
   - Maintain HQ IP at the world/group level instead of on a character.
   - Record gains from Communal Payouts in the editable HQ journal.
   - Allow GM-entered negative spending adjustments.
   - Display a recalculated Current HQ IP total on the HQ journal page.
-  - Remaining: display the available balance in the Payout window and add a
-    structured spending workflow if manual journal rows prove insufficient.
-- [~] **12. Faction-specific Reputation journal** — Hard
+  - Manual journal rows remain the intended spending workflow because HQ IP
+    spending is infrequent.
+- [x] **12. Faction-specific Reputation journal** — Hard
   - Track faction Reputation separately from normal Actor Reputation.
   - Write structured Actor, Reputation, Faction, and Reason rows to the Payouts
     journal.
   - Replace the current value when the same Actor and faction receive another
     Specific Reputation payout.
-  - Remaining: optional faction definitions and correction/rename handling.
+  - Factions intentionally remain free-text because a campaign may use dozens
+    or hundreds of them; managed faction definitions are not planned.
 
 ### Milestone 4: Completion and safety
 
@@ -88,14 +90,14 @@ Status key: `[x]` complete, `[~]` usable but incomplete, `[ ]` not implemented.
   - The internal versioned payout ledger retains structured records.
   - The journal is intentionally a reference-only log; a separate history
     browser, filtering UI, and payout-history editor are not required.
-- [~] **14. Automated tests and migration handling** — Hard
+- [-] **14. Automated Foundry integration tests** — Hard
   - Stored payout records are versioned and legacy journal markup has targeted
     migration handling.
-  - Type checking, production builds, formatting, and package validation run
-    before releases.
-  - Remaining: automated unit/integration coverage.
-  - Test reward calculations, permissions, malformed Actors, and partial-failure
-    behavior.
+  - Type checking, production builds, formatting, and package validation remain
+    part of the release process.
+  - A containerized Foundry v12 browser-test environment is intentionally not
+    planned because it would require maintaining a licensed Foundry installation,
+    Docker, and test-world data outside the normal hosted game environment.
 
 ### Milestone 5: Player communication and external summaries
 
@@ -122,7 +124,7 @@ Status key: `[x]` complete, `[~]` usable but incomplete, `[ ]` not implemented.
 
 ### Milestone 6: Inventory payouts
 
-- [~] **19. Item document payouts** — Medium–Hard
+- [x] **19. Item document payouts** — Medium–Hard
   - Accept any Foundry Item document in Communal and individual payouts only,
     including compendium, world-directory, custom, and embedded Items.
   - Deliver individual Items to the selected Actor with transactional rollback.
@@ -131,8 +133,8 @@ Status key: `[x]` complete, `[~]` usable but incomplete, `[ ]` not implemented.
   - Include item names, quantities, descriptions, and source UUIDs in
     Preview, Inbox, Discord output, the structured ledger, and Payout Log.
   - Deliver Communal Items to the selected Payout Container.
-  - Remaining: test Cyberpunk RED Item types in-world and decide whether new
-    stacks should ever merge into matching Items already owned by the Actor.
+  - New stacks remain distinct rather than merging into matching owned Items.
+    Additional exhaustive Item-type edge-case testing is not planned.
 - [x] **20. Display-only Primary Downtime payouts** — Easy
   - Keep Downtime visible alongside Primary Money and IP with a day count and
     description.
@@ -142,31 +144,25 @@ Status key: `[x]` complete, `[~]` usable but incomplete, `[ ]` not implemented.
 
 ## Current release state
 
-Version `0.5.1` completes the core character payout workflow and provides usable
-attendance, HQ IP, faction Reputation, player acknowledgment, Discord summary,
-and audit-log features. Current unreleased development adds individual Item
-delivery and a configurable Payout Container for Communal Money and Items.
-It also adds display-only Primary Downtime awards. Correction workflows and
-automated tests remain future work.
+Version `0.9.0` provides the complete intended payout workflow: character and
+communal rewards, attendance, HQ IP, faction Reputation, Item delivery, player
+acknowledgment and Humanity rolls, Discord summaries, and audit journals.
+Correction/reversal workflows, managed faction definitions, exhaustive Item
+edge-case testing, and containerized Foundry integration tests are intentionally
+out of scope for this friendly-game module.
 
 ## Next recommended work
 
-1. Test individual and communal Item delivery across Cyberpunk RED Item types,
-   particularly stackable Items and customized embedded Items.
-2. Show the current HQ IP balance in the Payout window and decide whether HQ
-   spending needs a dedicated form.
-3. Add payout correction/reversal semantics so attendance and audit history stay
-   accurate when a GM fixes a completed payout.
-4. Add automated calculation and transaction rollback tests.
+1. Continue native-looking UI refinement for the Payout and Payout Inbox forms.
+2. Address defects found during normal campaign use.
+3. Revisit Foundry compatibility when Cyberpunk RED supports a newer core
+   version.
 
 ## Decisions to make while implementing
 
 - Whether negative Money/IP values are permitted or must use a separate spending
   workflow.
-- Whether corrected payouts should reverse and replace the original or create an
-  explicit adjustment record.
-- Whether factions remain free-text or become a managed list.
-- Whether HQ spending remains an editable journal workflow or gets dedicated UI.
+- Whether future Foundry versions provide useful native calendar integration.
 
 ## Resolved design decisions
 
@@ -177,6 +173,10 @@ automated tests remain future work.
 - The most recently entered In-Game Date becomes the next payout's default.
 - Humanity dice are rolled by the owning player rather than by the GM by default.
 - Module journals are identified by stored IDs and are never adopted by name.
+- HQ spending remains a manually entered journal adjustment.
+- Factions remain free-text and payout corrections are handled pragmatically by
+  the GM rather than through a dedicated reversal workflow.
+- A local/containerized Foundry integration-test environment is not maintained.
 - Foundry v12 remains the supported target while Cyberpunk RED requires it. A
   future v13 migration may use Foundry's world calendar APIs when available; the
   module will not build a custom calendar UI.

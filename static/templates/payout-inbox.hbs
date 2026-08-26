@@ -1,11 +1,34 @@
 <form class="payout-inbox-form">
   {{#if isGM}}
-    <label class="inbox-gm-actions">
-      <input type="checkbox" data-enable-gm-actions />
-      <span><strong>Enable GM controls for player actions</strong><small>Allows
-          you to roll Humanity and acknowledge payouts on behalf of players.
-          Disabled by default to prevent accidental actions.</small></span>
-    </label>
+    <section class="inbox-gm-panel">
+      <label class="inbox-gm-actions">
+        <input type="checkbox" data-enable-gm-actions />
+        <span><strong>Enable GM controls for player actions</strong><small
+          >Allows you to roll Humanity and acknowledge payouts on behalf of
+            players. Disabled by default to prevent accidental actions.</small></span>
+      </label>
+      <div class="inbox-gm-bulk-actions">
+        <button
+          type="button"
+          data-gm-inbox-action
+          data-acknowledge-all
+          data-available="{{hasAcknowledgments}}"
+        ><i class="fas fa-check-double"></i> Acknowledge all</button>
+        <button
+          type="button"
+          data-gm-inbox-action
+          data-roll-all
+          data-available="{{hasPendingRolls}}"
+        ><i class="fas fa-dice"></i> Roll all</button>
+        <button
+          type="button"
+          class="inbox-cancel-all"
+          data-gm-inbox-action
+          data-cancel-all-rolls
+          data-available="{{hasPendingRolls}}"
+        ><i class="fas fa-ban"></i> Cancel all rolls</button>
+      </div>
+    </section>
   {{/if}}
 
   {{#unless hasItems}}
@@ -13,39 +36,26 @@
       Nothing is waiting for you.</p>
   {{/unless}}
 
-  {{#if pendingRolls.length}}
-    <section class="inbox-section">
-      <h3><i class="fas fa-dice-d6"></i> Pending Humanity Rolls</h3>
-      {{#each pendingRolls}}
-        <article class="inbox-item">
-          <div>
-            <strong>{{actorName}} — {{actionLabel}} {{formula}}</strong>
-            <p>{{description}}</p>
-          </div>
-          <button
-            type="button"
-            data-player-inbox-action
-            data-roll-id="{{id}}"
-            data-actor-id="{{actorId}}"
-          >
-            <i class="fas fa-dice-d6"></i>
-            Roll
-          </button>
-        </article>
-      {{/each}}
-    </section>
-  {{/if}}
+  <section class="inbox-card-list" aria-label="Pending payouts">
+    {{#each cards}}
+      <details
+        class="inbox-card {{statusClass}}"
+        data-inbox-expanded="{{expanded}}"
+      >
+        <summary class="inbox-card-header">
+          <span class="inbox-card-title">
+            <strong>{{sessionLabel}}</strong>
+            <small>{{inGameDate}}</small>
+          </span>
+          <span class="inbox-card-actor">
+            {{#if showUserName}}<small>{{userName}}</small>{{/if}}
+            <strong>{{actorName}}</strong>
+          </span>
+          <span class="inbox-card-status">{{statusLabel}}</span>
+        </summary>
 
-  {{#if acknowledgments.length}}
-    <section class="inbox-section">
-      <h3><i class="fas fa-receipt"></i>
-        {{#if isGM}}Payout Acknowledgments{{else}}Payouts Awaiting
-          Acknowledgment{{/if}}</h3>
-      {{#each acknowledgments}}
-        <article class="inbox-item">
-          <div>
-            <strong>{{userName}} — {{sessionLabel}}</strong>
-            <p>{{actorName}}</p>
+        <div class="inbox-card-body">
+          {{#if awards.length}}
             <ul class="inbox-awards">
               {{#each awards}}
                 <li>
@@ -54,22 +64,46 @@
                   {{else}}
                     <i class="{{icon}} inbox-award-icon"></i>
                   {{/if}}
-                  <span>{{text}}</span>
+                  <span class="inbox-award-content">
+                    {{#if label}}
+                      <span><strong>{{label}}</strong>: {{value}}</span>
+                      {{#if description}}<small>{{description}}</small>{{/if}}
+                    {{else}}
+                      <span>{{text}}</span>
+                    {{/if}}
+                  </span>
                 </li>
               {{/each}}
             </ul>
-          </div>
-          <button
-            type="button"
-            data-player-inbox-action
-            data-ack-id="{{id}}"
-            data-user-id="{{userId}}"
-          >
-            <i class="fas fa-check"></i>
-            Acknowledge
-          </button>
-        </article>
-      {{/each}}
-    </section>
-  {{/if}}
+          {{/if}}
+        </div>
+
+        <footer class="inbox-card-footer">
+          {{#each pendingRolls}}
+            <button
+              type="button"
+              data-player-inbox-action
+              data-roll-id="{{id}}"
+              data-actor-id="{{actorId}}"
+            >
+              <i class="fas fa-dice-d6"></i>
+              {{actionLabel}}
+              {{formula}}
+            </button>
+          {{/each}}
+          {{#if acknowledgmentId}}
+            <button
+              type="button"
+              data-player-inbox-action
+              data-ack-id="{{acknowledgmentId}}"
+              data-user-id="{{userId}}"
+            >
+              <i class="fas fa-check"></i>
+              Acknowledge
+            </button>
+          {{/if}}
+        </footer>
+      </details>
+    {{/each}}
+  </section>
 </form>

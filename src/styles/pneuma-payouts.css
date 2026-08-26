@@ -3,9 +3,21 @@
   --pneuma-accent: #8f2028;
   --pneuma-blue: #2b6f9f;
   --pneuma-green: #2f7d3c;
+  --pneuma-purple: #6f4b8b;
+  --pneuma-link: #1f5f99;
   --pneuma-accent-soft: rgba(143, 32, 40, 0.16);
   --pneuma-panel: rgba(0, 0, 0, 0.055);
   --pneuma-panel-strong: rgba(0, 0, 0, 0.1);
+  --pneuma-row: color-mix(
+    in srgb,
+    var(--cpr-background-window, #d0d0d0) 88%,
+    var(--cpr-text-normal, #222) 12%
+  );
+  --pneuma-drop-zone: color-mix(
+    in srgb,
+    var(--cpr-background-window, #d0d0d0) 80%,
+    var(--cpr-text-normal, #222) 20%
+  );
   box-sizing: border-box;
 }
 
@@ -46,15 +58,19 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.6rem;
-  border-bottom: 1px solid var(--color-border-light-primary, #777);
-  background: var(--pneuma-panel);
-  border-radius: 3px 3px 0 0;
-  padding-top: 0.25rem;
-  padding-bottom: 0.25rem;
+  gap: 0.35rem;
+  border: 1px solid var(--color-border-light-primary, #777);
+  background: transparent;
+  border-radius: 4px;
+  padding: 0.25rem;
 }
 
 .pneuma-payouts .wizard-step {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  border-radius: 3px;
+  padding: 0.15rem 0.45rem;
   color: var(--color-text-dark-secondary, #777);
   font-size: 0.85rem;
 }
@@ -69,8 +85,15 @@
 }
 
 .pneuma-payouts .wizard-step--active {
-  color: var(--pneuma-accent);
+  color: var(--pneuma-purple);
   font-weight: 700;
+  background: rgba(111, 75, 139, 0.12);
+}
+
+.pneuma-payouts .wizard-steps > i {
+  color: var(--color-text-dark-secondary, #777);
+  font-size: 0.7rem;
+  opacity: 0.75;
 }
 
 .pneuma-payouts .payout-heading p {
@@ -94,18 +117,44 @@
 }
 
 .pneuma-payouts [data-step-panel="participants"] .payout-heading {
-  border-right: 1px solid var(--color-border-light-primary, #777);
-  padding-right: 0.5rem;
+  align-self: start;
+  margin: 0;
+  border: 1px solid var(--color-border-light-primary, #777);
+  border-left: 3px solid var(--pneuma-purple);
+  border-radius: 4px;
+  padding: 0.3rem 0.45rem 0.45rem;
+  background: rgba(111, 75, 139, 0.045);
+}
+
+.pneuma-payouts [data-step-panel="participants"] .payout-heading > legend {
+  padding: 0 0.35rem;
+  color: var(--pneuma-purple);
+  font-weight: 700;
 }
 
 .pneuma-payouts .participant-selection {
   display: flex;
   min-height: 0;
   flex-direction: column;
+  margin: 0;
+  border: 1px solid var(--color-border-light-primary, #777);
+  border-left: 3px solid var(--pneuma-purple);
+  border-radius: 4px;
+  padding: 0.3rem 0.45rem 0.45rem;
+  background: rgba(111, 75, 139, 0.045);
+  overflow: hidden;
+}
+
+.pneuma-payouts .participant-selection > legend {
+  padding: 0 0.35rem;
+  color: var(--pneuma-purple);
+  font-weight: 700;
 }
 
 .pneuma-payouts .participant-instructions {
   margin: 0 0 0.35rem;
+  color: var(--color-text-dark-secondary, #777);
+  font-size: 0.78rem;
 }
 
 .pneuma-payouts .payout-metadata {
@@ -123,13 +172,17 @@
 
 .pneuma-payouts .payout-metadata textarea {
   min-height: 8rem;
-  background: rgba(255, 255, 255, 0.88);
-  color: #1b1b1b;
+  background: var(
+    --cpr-background-foundry-input,
+    var(--color-bg-option, rgba(0, 0, 0, 0.08))
+  );
+  color: var(--cpr-text-foundry-input, inherit);
   resize: vertical;
 }
 
 .pneuma-payouts .payout-metadata textarea::placeholder {
-  color: #686868;
+  color: var(--cpr-text-normal, currentColor);
+  opacity: 0.7;
 }
 
 .pneuma-payouts .participant-list {
@@ -150,12 +203,12 @@
   border: 1px solid var(--color-border-light-primary, #777);
   border-radius: 4px;
   padding: 0.2rem 0.35rem;
-  background: var(--pneuma-panel);
+  background: var(--pneuma-row);
 }
 
 .pneuma-payouts .participant:has([data-user-toggle]:checked) {
-  border-left: 3px solid var(--pneuma-accent);
-  background: var(--pneuma-accent-soft);
+  border-left: 1px solid var(--color-border-light-primary, #777);
+  background: var(--pneuma-row);
 }
 
 .pneuma-payouts .participant--ineligible {
@@ -189,6 +242,7 @@
   flex: 1;
   grid-template-columns: minmax(21rem, 0.9fr) minmax(0, 1.6fr);
   gap: 0.5rem;
+  container-type: inline-size;
 }
 
 .pneuma-payouts .reward-layout {
@@ -201,21 +255,7 @@
 }
 
 .pneuma-payouts .reward-summary {
-  display: flex;
-  align-items: baseline;
-  gap: 1rem;
   margin-bottom: 0.35rem;
-  border-bottom: 1px solid var(--color-border-light-primary, #777);
-  padding: 0.2rem 0.3rem;
-  font-size: 0.8rem;
-  background: var(--pneuma-panel);
-}
-
-.pneuma-payouts .reward-summary > span:last-child {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .pneuma-payouts .primary-payouts,
@@ -224,7 +264,8 @@
   border: 1px solid var(--color-border-light-primary, #777);
   border-radius: 4px;
   padding: 0.3rem 0.45rem 0.45rem;
-  background: var(--pneuma-panel);
+  background: transparent;
+  overflow: hidden;
 }
 
 .pneuma-payouts .communal-payouts {
@@ -256,7 +297,7 @@
   margin-top: 0.35rem;
   border: 1px dashed var(--color-border-light-primary, #777);
   border-radius: 3px;
-  background: rgba(43, 111, 159, 0.06);
+  background: var(--pneuma-drop-zone);
   padding: 0.3rem;
 }
 
@@ -329,8 +370,13 @@
 }
 
 .pneuma-payouts .primary-payouts legend,
-.pneuma-payouts .additional-payouts legend {
+.pneuma-payouts .additional-payouts legend,
+.pneuma-payouts .individual-rewards > legend {
+  width: auto;
+  margin: 0;
+  border: 0;
   padding: 0 0.35rem;
+  background: transparent;
   font-weight: 700;
 }
 
@@ -342,6 +388,10 @@
   color: var(--pneuma-green);
 }
 
+.pneuma-payouts .individual-rewards > legend {
+  color: var(--pneuma-purple);
+}
+
 .pneuma-payouts .fieldset-hint {
   margin: 0 0 0.4rem;
   color: var(--color-text-dark-secondary, #777);
@@ -349,7 +399,7 @@
 }
 
 .pneuma-payouts .actor-sheet-link {
-  color: var(--pneuma-accent);
+  color: var(--pneuma-link);
   cursor: pointer;
   font-weight: 700;
   text-decoration: underline;
@@ -389,14 +439,14 @@
   --payout-amount-width: 4.5rem;
   display: grid;
   grid-template-columns:
-    minmax(6.5rem, 1fr) var(--payout-amount-width) auto
+    minmax(6.5rem, 1fr) var(--payout-amount-width) auto minmax(8rem, 1.5fr)
     1.8rem;
   align-items: center;
   gap: 0.3rem;
 }
 
 .pneuma-payouts .additional-entry [data-additional-field="description"] {
-  grid-column: 1 / 4;
+  min-width: 0;
 }
 
 .pneuma-payouts .add-entry {
@@ -416,21 +466,18 @@
   display: flex;
   min-height: 0;
   flex-direction: column;
-  border-left: 1px solid var(--color-border-light-primary, #777);
-  padding-left: 0.5rem;
+  border: 1px solid var(--color-border-light-primary, #777);
+  border-left: 3px solid var(--pneuma-purple);
+  border-radius: 4px;
+  padding: 0.3rem 0 0;
+  background: rgba(111, 75, 139, 0.055);
+  overflow: hidden;
+  container-type: inline-size;
 }
 
-.pneuma-payouts .individual-rewards header,
-.pneuma-payouts .individual-rewards h3,
-.pneuma-payouts .individual-rewards p {
+.pneuma-payouts .individual-rewards > p {
   margin: 0;
-}
-
-.pneuma-payouts .individual-rewards header {
-  margin-bottom: 0.4rem;
-}
-
-.pneuma-payouts .individual-rewards p {
+  padding: 0 0.55rem;
   color: var(--color-text-dark-secondary, #777);
   font-size: 0.75rem;
 }
@@ -442,18 +489,18 @@
   flex-direction: column;
   gap: 0.3rem;
   overflow-y: auto;
+  padding: 0.4rem;
 }
 
 .pneuma-payouts .individual-row {
   border: 1px solid var(--color-border-light-primary, #777);
   border-radius: 3px;
   padding: 0.25rem 0.35rem;
-  background: var(--pneuma-panel);
+  background: var(--pneuma-row);
 }
 
 .pneuma-payouts .individual-row-header {
-  border-left: 3px solid var(--pneuma-accent);
-  padding-left: 0.35rem;
+  padding-left: 0;
 }
 
 .pneuma-payouts .individual-row-header {
@@ -526,6 +573,26 @@
   flex: 1 1 auto;
 }
 
+.pneuma-payouts [aria-invalid="true"] {
+  border-color: var(--color-level-error, #a00) !important;
+  box-shadow: 0 0 0 1px var(--color-level-error, #a00);
+}
+
+.pneuma-payouts .payout-field-error,
+.pneuma-payouts .payout-validation-summary {
+  display: block;
+  margin: 0.15rem 0 0;
+  color: var(--color-level-error, #a00);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.pneuma-payouts .payout-validation-summary {
+  border-left: 3px solid var(--color-level-error, #a00);
+  background: rgba(160, 0, 0, 0.08);
+  padding: 0.35rem 0.5rem;
+}
+
 .pneuma-payouts .participant-toggle,
 .pneuma-payouts .actor-option {
   display: flex;
@@ -540,6 +607,11 @@
 .pneuma-payouts .actor-option--default {
   min-width: 12rem;
   flex: 1;
+}
+
+.pneuma-payouts [data-actor-toggle] {
+  transform: scale(0.88);
+  opacity: 0.78;
 }
 
 .pneuma-payouts .presence {
@@ -643,13 +715,17 @@
   text-transform: uppercase;
 }
 
-.pneuma-payouts .preview-heading [data-preview-session] {
+.pneuma-payouts .preview-heading [data-preview-session],
+.pneuma-payouts .preview-heading [data-session-summary] {
   font-size: 1rem;
 }
 
 .pneuma-payouts .preview-heading [data-preview-recipients],
 .pneuma-payouts .preview-heading [data-preview-in-game-date],
-.pneuma-payouts .preview-heading [data-preview-notes] {
+.pneuma-payouts .preview-heading [data-preview-notes],
+.pneuma-payouts .preview-heading [data-recipient-list],
+.pneuma-payouts .preview-heading [data-reward-in-game-date],
+.pneuma-payouts .preview-heading [data-reward-notes] {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -724,7 +800,17 @@
   margin-bottom: 0.2rem;
   border-radius: 3px;
   padding: 0.25rem 0.35rem;
-  background: rgba(0, 0, 0, 0.055);
+  background: var(--pneuma-row);
+}
+
+.pneuma-payouts [data-preview-communal] li {
+  border-left: 3px solid var(--pneuma-blue);
+  background: rgba(43, 111, 159, 0.055);
+}
+
+.pneuma-payouts [data-preview-group] li {
+  border-left: 3px solid var(--pneuma-green);
+  background: rgba(47, 125, 60, 0.055);
 }
 
 .pneuma-payouts .preview-item-label {
@@ -763,7 +849,7 @@
   flex: 0 0 auto;
   border: 1px solid var(--color-border-light-primary, #777);
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.035);
+  background: var(--pneuma-row);
   overflow: hidden;
 }
 
@@ -772,7 +858,7 @@
   cursor: pointer;
   list-style: none;
   padding: 0.25rem 0.4rem;
-  background: rgba(0, 0, 0, 0.08);
+  background: var(--pneuma-drop-zone);
   font-weight: 700;
 }
 
@@ -795,8 +881,8 @@
 }
 
 .pneuma-payouts .preview-recipient .preview-item--individual {
-  border-left: 3px solid var(--pneuma-accent);
-  background: rgba(143, 32, 40, 0.08);
+  border-left: 3px solid var(--pneuma-purple);
+  background: rgba(111, 75, 139, 0.11);
 }
 
 .pneuma-payouts .preview-recipient .preview-list {
@@ -909,14 +995,21 @@
   padding: 0.5rem;
 }
 
+.pneuma-payouts .inbox-gm-panel {
+  position: sticky;
+  z-index: 2;
+  top: 0;
+  border: 1px solid var(--color-border-light-primary, #777);
+  border-left: 3px solid var(--pneuma-accent);
+  border-radius: 4px;
+  background: var(--color-bg-option, rgba(0, 0, 0, 0.12));
+  overflow: hidden;
+}
+
 .pneuma-payouts .inbox-gm-actions {
   display: flex;
   align-items: flex-start;
   gap: 0.45rem;
-  border: 1px solid var(--color-border-light-primary, #777);
-  border-left: 3px solid var(--pneuma-accent);
-  border-radius: 4px;
-  background: var(--pneuma-panel);
   padding: 0.45rem 0.55rem;
 }
 
@@ -927,6 +1020,25 @@
 .pneuma-payouts .inbox-gm-actions span,
 .pneuma-payouts .inbox-gm-actions small {
   display: block;
+}
+
+.pneuma-payouts .inbox-gm-bulk-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.35rem;
+  border-top: 1px solid var(--color-border-light-primary, #777);
+  padding: 0.35rem 0.55rem;
+  background: var(--pneuma-panel);
+}
+
+.pneuma-payouts .inbox-gm-bulk-actions button {
+  width: auto;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.pneuma-payouts .inbox-gm-bulk-actions .inbox-cancel-all:not(:disabled) {
+  color: var(--color-level-error, #a00);
 }
 
 .pneuma-payouts .inbox-gm-actions small {
@@ -941,65 +1053,130 @@
   text-align: center;
 }
 
-.pneuma-payouts .inbox-section h3 {
-  margin: 0 0 0.35rem;
-  border-bottom: 1px solid var(--color-border-light-primary, #777);
-  padding-bottom: 0.25rem;
-  border-left: 3px solid var(--pneuma-accent);
-  background: var(--pneuma-panel-strong);
-  padding-top: 0.25rem;
-  padding-left: 0.4rem;
-}
-
-.pneuma-payouts .inbox-item {
+.pneuma-payouts .inbox-card-list {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  margin-bottom: 0.3rem;
-  border: 1px solid var(--color-border-light-primary, #777);
-  border-radius: 4px;
-  padding: 0.4rem 0.5rem;
-  background: var(--pneuma-panel);
+  flex-direction: column;
+  gap: 0.4rem;
 }
 
-.pneuma-payouts .inbox-item p {
-  margin: 0.15rem 0 0;
+.pneuma-payouts .inbox-card {
+  border: 1px solid var(--color-border-light-primary, #777);
+  border-left: 3px solid var(--pneuma-green);
+  border-radius: 4px;
+  background: transparent;
+  overflow: hidden;
+}
+
+.pneuma-payouts .inbox-card--pending {
+  border-left-color: var(--color-level-warning, #b26b00);
+}
+
+.pneuma-payouts .inbox-card-header {
+  display: grid;
+  grid-template-columns: minmax(8rem, 1.2fr) minmax(7rem, 1fr) auto auto;
+  align-items: center;
+  gap: 0.6rem;
+  cursor: pointer;
+  padding: 0.4rem 0.55rem;
+  background: var(--pneuma-panel-strong);
+  list-style: none;
+}
+
+.pneuma-payouts .inbox-card-header::-webkit-details-marker {
+  display: none;
+}
+
+.pneuma-payouts .inbox-card-header::after {
+  margin-left: 0.2rem;
+  content: "▸";
+}
+
+.pneuma-payouts .inbox-card[open] .inbox-card-header::after {
+  content: "▾";
+}
+
+.pneuma-payouts .inbox-card-title,
+.pneuma-payouts .inbox-card-actor,
+.pneuma-payouts .inbox-card-title small,
+.pneuma-payouts .inbox-card-actor small {
+  display: block;
+  min-width: 0;
+}
+
+.pneuma-payouts .inbox-card-title small,
+.pneuma-payouts .inbox-card-actor small {
   color: var(--color-text-dark-secondary, #777);
-  font-size: 0.8rem;
+  font-size: 0.72rem;
+}
+
+.pneuma-payouts .inbox-card-status {
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
+  color: var(--pneuma-green);
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.pneuma-payouts .inbox-card--pending .inbox-card-status {
+  color: var(--color-level-warning, #9a5b00);
+}
+
+.pneuma-payouts .inbox-card-body {
+  padding: 0.15rem 0.55rem 0.35rem;
 }
 
 .pneuma-payouts .inbox-awards {
-  margin: 0.3rem 0 0;
-  padding-left: 1.2rem;
+  margin: 0.2rem 0 0;
+  padding: 0;
   font-size: 0.8rem;
 }
 
 .pneuma-payouts .inbox-awards li {
-  display: flex;
-  align-items: center;
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  align-items: start;
   gap: 0.35rem;
   list-style: none;
   margin-bottom: 0.15rem;
 }
 
 .pneuma-payouts .inbox-award-icon {
-  width: 1.6rem;
-  flex: 0 0 1.6rem;
+  width: 2rem;
   color: var(--pneuma-accent, #8f2830);
   text-align: center;
 }
 
 .pneuma-payouts .inbox-awards img {
-  width: 1.6rem;
-  height: 1.6rem;
-  flex: 0 0 1.6rem;
+  width: 2rem;
+  height: 2rem;
   border: 0;
   vertical-align: middle;
   object-fit: contain;
 }
 
-.pneuma-payouts .inbox-item button {
+.pneuma-payouts .inbox-award-content,
+.pneuma-payouts .inbox-award-content small {
+  display: block;
+}
+
+.pneuma-payouts .inbox-award-content small {
+  margin-top: 0.05rem;
+  color: var(--color-text-dark-secondary, #777);
+  font-style: italic;
+}
+
+.pneuma-payouts .inbox-card-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.35rem;
+  border-top: 1px solid var(--color-border-light-primary, #777);
+  padding: 0.35rem 0.55rem;
+  background: var(--pneuma-panel);
+}
+
+.pneuma-payouts .inbox-card-footer button {
   width: auto;
   margin: 0;
   white-space: nowrap;

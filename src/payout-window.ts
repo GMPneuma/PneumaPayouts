@@ -66,6 +66,15 @@ const ISSUE_LABELS: Record<PlayerDiscoveryIssue, string> = {
   sharedActor: "One or more Actors are shared with another player.",
 };
 
+class PayoutValidationError extends Error {
+  constructor(
+    message: string,
+    readonly field?: HTMLElement,
+  ) {
+    super(message);
+  }
+}
+
 export class PayoutWindow extends FormApplication {
   #additionalEntryIndex = 0;
   #individualEntryIndex = 0;
@@ -170,6 +179,7 @@ export class PayoutWindow extends FormApplication {
     root.addEventListener("input", (event) => {
       this.#plan = null;
       const target = event.target;
+      if (target instanceof HTMLElement) this.#clearFieldError(target);
       if (
         target instanceof HTMLInputElement &&
         target.matches("[data-entry-amount]") &&
@@ -300,6 +310,7 @@ export class PayoutWindow extends FormApplication {
   }
 
   #goToRewards(root: HTMLElement): void {
+    this.#clearValidation(root);
     const sessionLabel = root.querySelector<HTMLInputElement>(
       '[name="sessionLabel"]',
     );
@@ -313,21 +324,34 @@ export class PayoutWindow extends FormApplication {
     ).length;
 
     if (!sessionLabel?.value.trim()) {
-      ui.notifications.warn("Enter a session label before continuing.");
-      sessionLabel?.focus();
+      this.#showValidationError(
+        root,
+        new PayoutValidationError(
+          "Enter a session name before continuing.",
+          sessionLabel ?? undefined,
+        ),
+      );
       return;
     }
 
     if (selectedPlayers === 0 || selectedActors.length === 0) {
-      ui.notifications.warn(
-        "Select at least one player and one Actor before continuing.",
+      this.#showValidationError(
+        root,
+        new PayoutValidationError(
+          "Select at least one player and Actor before continuing.",
+          root.querySelector<HTMLElement>(".participant-list") ?? undefined,
+        ),
       );
       return;
     }
 
     if (selectedActors.length !== selectedPlayers) {
-      ui.notifications.warn(
-        "Every selected player must have exactly one Actor selected.",
+      this.#showValidationError(
+        root,
+        new PayoutValidationError(
+          "Every selected player must have exactly one Actor selected.",
+          root.querySelector<HTMLElement>(".participant-list") ?? undefined,
+        ),
       );
       return;
     }
@@ -336,6 +360,19 @@ export class PayoutWindow extends FormApplication {
       "[data-session-summary]",
     );
     if (sessionSummary) sessionSummary.textContent = sessionLabel.value.trim();
+    this.#setText(
+      root,
+      "[data-reward-in-game-date]",
+      root
+        .querySelector<HTMLInputElement>('[name="inGameDate"]')
+        ?.value.trim() || "Not specified",
+    );
+    this.#setText(
+      root,
+      "[data-reward-notes]",
+      root.querySelector<HTMLTextAreaElement>('[name="notes"]')?.value.trim() ||
+        "None",
+    );
 
     const recipients = root.querySelector<HTMLElement>("[data-recipient-list]");
     if (recipients)
@@ -748,10 +785,11 @@ export class PayoutWindow extends FormApplication {
   }
 
   async #goToPreview(root: HTMLElement): Promise<void> {
+    this.#clearValidation(root);
     try {
       this.#plan = await this.#buildPlan(root);
     } catch (error) {
-      ui.notifications.warn(this.#errorMessage(error));
+      this.#showValidationError(root, error);
       return;
     }
     const sessionLabel = root.querySelector<HTMLInputElement>(
@@ -910,7 +948,12 @@ export class PayoutWindow extends FormApplication {
     const sessionLabel = root
       .querySelector<HTMLInputElement>('[name="sessionLabel"]')
       ?.value.trim();
-    if (!sessionLabel) throw new Error("A session label is required.");
+    if (!sessionLabel)
+      throw new PayoutValidationError(
+        "A session name is required.",
+        root.querySelector<HTMLInputElement>('[name="sessionLabel"]') ??
+          undefined,
+      );
     const inGameDate =
       root
         .querySelector<HTMLInputElement>('[name="inGameDate"]')
@@ -922,7 +965,11 @@ export class PayoutWindow extends FormApplication {
       root.querySelector<HTMLInputElement>('[name="communalMoney"]')?.value,
     );
     if (!Number.isSafeInteger(communalMoneyAmount))
-      throw new Error("Communal Money must be a whole number.");
+      throw new PayoutValidationError(
+        "Communal Money must be a whole number.",
+        root.querySelector<HTMLInputElement>('[name="communalMoney"]') ??
+          undefined,
+      );
     const communalMoneyDescription =
       root
         .querySelector<HTMLInputElement>('[name="communalMoneyDescription"]')
@@ -934,10 +981,16 @@ export class PayoutWindow extends FormApplication {
       ? game.actors.get(payoutContainerId)
       : undefined;
     if (payoutContainerActor && payoutContainerActor.type !== "container")
-      throw new Error("The selected Payout Container is invalid.");
+      throw new PayoutValidationError(
+        "The selected Payout Container is invalid.",
+        root.querySelector<HTMLSelectElement>('[name="payoutContainerId"]') ??
+          undefined,
+      );
     if ((communalMoneyAmount || communalItems.length) && !payoutContainerActor)
-      throw new Error(
+      throw new PayoutValidationError(
         "Select a Payout Container before adding Communal Money or Items.",
+        root.querySelector<HTMLSelectElement>('[name="payoutContainerId"]') ??
+          undefined,
       );
     const payoutContainer = payoutContainerActor
       ? {
@@ -954,13 +1007,20 @@ export class PayoutWindow extends FormApplication {
       ["downtime", "groupDowntime", "groupDowntimeDescription"],
     ] as const;
     for (const [reward, amountName, descriptionName] of primary) {
-      const amount = Number(
-        root.querySelector<HTMLInputElement>(`[name="${amountName}"]`)?.value,
-      );
+      const amountField =
+        root.querySelector<HTMLInputElement>(`[name="${amountName}"]`) ??
+        undefined;
+      const amount = Number(amountField?.value);
       if (!Number.isSafeInteger(amount))
-        throw new Error(`${reward} must be a whole number.`);
+        throw new PayoutValidationError(
+          `${this.#rewardLabel(reward)} must be a whole number.`,
+          amountField,
+        );
       if (reward === "downtime" && amount < 0)
-        throw new Error("Downtime cannot be negative.");
+        throw new PayoutValidationError(
+          "Downtime cannot be negative.",
+          amountField,
+        );
       if (amount !== 0)
         groupEntries.push({
           reward,
@@ -980,7 +1040,10 @@ export class PayoutWindow extends FormApplication {
       root.querySelector<HTMLInputElement>('[name="groupHqIp"]')?.value,
     );
     if (!Number.isSafeInteger(hqIpAmount))
-      throw new Error("HQ IP must be a whole number.");
+      throw new PayoutValidationError(
+        "HQ IP must be a whole number.",
+        root.querySelector<HTMLInputElement>('[name="groupHqIp"]') ?? undefined,
+      );
     const hqIpDescription =
       root
         .querySelector<HTMLInputElement>('[name="groupHqIpDescription"]')
@@ -1199,12 +1262,23 @@ export class PayoutWindow extends FormApplication {
     const amount = Number(
       entry.querySelector<HTMLInputElement>("[data-entry-amount]")?.value,
     );
+    const amountField =
+      entry.querySelector<HTMLInputElement>("[data-entry-amount]") ?? undefined;
     if (!formula && !Number.isSafeInteger(amount))
-      throw new Error(`${this.#rewardLabel(reward)} must be a whole number.`);
+      throw new PayoutValidationError(
+        `${this.#rewardLabel(reward)} must be a whole number.`,
+        amountField,
+      );
     if ((reward === "humanityGain" || reward === "humanityLoss") && amount < 0)
-      throw new Error("Humanity amounts cannot be negative.");
+      throw new PayoutValidationError(
+        "Humanity amounts cannot be negative.",
+        amountField,
+      );
     if (reward === "downtime" && amount < 0)
-      throw new Error("Downtime cannot be negative.");
+      throw new PayoutValidationError(
+        "Downtime cannot be negative.",
+        amountField,
+      );
     if (
       (reward === "humanityGain" ||
         reward === "humanityLoss" ||
@@ -1212,14 +1286,24 @@ export class PayoutWindow extends FormApplication {
         reward === "factionReputation") &&
       amount > 99
     )
-      throw new Error(`${this.#rewardLabel(reward)} cannot exceed 99.`);
+      throw new PayoutValidationError(
+        `${this.#rewardLabel(reward)} cannot exceed 99.`,
+        amountField,
+      );
     if (reward === "reputation" && amount < 0)
-      throw new Error("Reputation cannot be negative.");
+      throw new PayoutValidationError(
+        "Reputation cannot be negative.",
+        amountField,
+      );
     const faction = entry
       .querySelector<HTMLInputElement>("[data-entry-faction]")
       ?.value.trim();
     if (reward === "factionReputation" && !faction)
-      throw new Error("Specific Reputation requires a faction name.");
+      throw new PayoutValidationError(
+        "Enter a faction for Specific Reputation.",
+        entry.querySelector<HTMLInputElement>("[data-entry-faction]") ??
+          undefined,
+      );
     return {
       reward,
       amount: formula ? 0 : amount,
@@ -1243,8 +1327,74 @@ export class PayoutWindow extends FormApplication {
         field.placeholder ??
         field.name ??
         "Text field";
-      throw new Error(`${label} cannot exceed ${field.maxLength} characters.`);
+      throw new PayoutValidationError(
+        `${label} cannot exceed ${field.maxLength} characters.`,
+        field,
+      );
     }
+  }
+
+  #showValidationError(root: HTMLElement, error: unknown): void {
+    const message = this.#errorMessage(error);
+    const field =
+      error instanceof PayoutValidationError ? error.field : undefined;
+    const target = field ?? this.#fieldForValidationMessage(root, message);
+    if (target) {
+      target.setAttribute("aria-invalid", "true");
+      const note = document.createElement("small");
+      note.className = "payout-field-error";
+      note.dataset.payoutFieldError = "";
+      note.textContent = message;
+      target.insertAdjacentElement("afterend", note);
+      target.focus();
+    } else {
+      const note = document.createElement("p");
+      note.className = "payout-validation-summary";
+      note.dataset.payoutFieldError = "";
+      note.textContent = message;
+      root
+        .querySelector<HTMLElement>("[data-step-panel]:not([hidden])")
+        ?.prepend(note);
+    }
+    ui.notifications.warn(message);
+  }
+
+  #fieldForValidationMessage(
+    root: HTMLElement,
+    message: string,
+  ): HTMLElement | undefined {
+    const normalized = message.toLocaleLowerCase();
+    const name = normalized.includes("payout container")
+      ? "payoutContainerId"
+      : normalized.includes("hq ip")
+        ? "groupHqIp"
+        : normalized.includes("downtime")
+          ? "groupDowntime"
+          : normalized.includes("session")
+            ? "sessionLabel"
+            : undefined;
+    return name
+      ? (root.querySelector<HTMLElement>(`[name="${name}"]`) ?? undefined)
+      : undefined;
+  }
+
+  #clearFieldError(field: HTMLElement): void {
+    field.removeAttribute("aria-invalid");
+    const sibling = field.nextElementSibling;
+    if (
+      sibling instanceof HTMLElement &&
+      sibling.dataset.payoutFieldError !== undefined
+    )
+      sibling.remove();
+  }
+
+  #clearValidation(root: HTMLElement): void {
+    root
+      .querySelectorAll<HTMLElement>("[data-payout-field-error]")
+      .forEach((note) => note.remove());
+    root
+      .querySelectorAll<HTMLElement>('[aria-invalid="true"]')
+      .forEach((field) => field.removeAttribute("aria-invalid"));
   }
 
   async #applyPayout(root: HTMLElement): Promise<void> {

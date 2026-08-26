@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.9.0 - 2026-08-26
+
+- Refined the Participants, Payout, and Preview steps with consistent
+  native-style cards, metadata headers, category icons, restrained blue,
+  green, and purple accents, and theme-aware neutral row shading.
+- Added inline validation messages beside invalid fields while retaining
+  Foundry notifications.
+- Reworked the Payout Inbox into newest-first collapsible session cards with
+  dates, status labels, separated descriptions, larger Item icons, and grouped
+  Humanity and acknowledgment actions.
+- Added checkbox-protected GM bulk controls to acknowledge all payouts, roll all
+  pending Humanity rolls, or cancel all pending rolls with confirmation.
+- Stored in-game dates and structured award descriptions in new Inbox
+  acknowledgments while preserving compatibility with older entries.
+- Improved light/dark theme compatibility, conventional blue Actor links,
+  single-line payout descriptions, and consistent opaque Item drop zones.
+- Updated the roadmap to record finalized scope decisions and intentionally
+  excluded correction, managed-faction, exhaustive Item-test, and containerized
+  Foundry-test workflows.
+
 ## 0.5.5 - 2026-08-26
 
 - Added a GM-only Module Data settings screen showing journal reference data,
