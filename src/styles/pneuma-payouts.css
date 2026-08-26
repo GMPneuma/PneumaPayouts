@@ -240,7 +240,7 @@
   display: grid;
   min-height: 0;
   flex: 1;
-  grid-template-columns: minmax(21rem, 0.9fr) minmax(0, 1.6fr);
+  grid-template-columns: minmax(23rem, 1.05fr) minmax(0, 1.45fr);
   gap: 0.5rem;
   container-type: inline-size;
 }
@@ -446,7 +446,25 @@
 }
 
 .pneuma-payouts .additional-entry [data-additional-field="description"] {
+  grid-column: 4;
   min-width: 0;
+  width: 100%;
+}
+
+.pneuma-payouts .additional-entry [data-additional-field="type"] {
+  grid-column: 1;
+}
+
+.pneuma-payouts .additional-entry [data-additional-field="amount"] {
+  grid-column: 2;
+}
+
+.pneuma-payouts .additional-entry [data-additional-field="mode"] {
+  grid-column: 3;
+}
+
+.pneuma-payouts .additional-entry .remove-entry {
+  grid-column: 5;
 }
 
 .pneuma-payouts .add-entry {

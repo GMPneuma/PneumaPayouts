@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.9.1 - 2026-08-26
+
+- Fixed dynamic Primary Payout rows so Description expands into all remaining
+  space and the delete button stays pinned to the right, including when the
+  Humanity dice selector is hidden.
+- Widened the default Communal and Primary Payout column for more comfortable
+  amount and description entry.
+
 ## 0.9.0 - 2026-08-26
 
 - Refined the Participants, Payout, and Preview steps with consistent

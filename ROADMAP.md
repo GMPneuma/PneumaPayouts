@@ -144,7 +144,7 @@ Status key: `[x]` complete, `[~]` usable but incomplete, `[ ]` not implemented,
 
 ## Current release state
 
-Version `0.9.0` provides the complete intended payout workflow: character and
+Version `0.9.1` provides the complete intended payout workflow: character and
 communal rewards, attendance, HQ IP, faction Reputation, Item delivery, player
 acknowledgment and Humanity rolls, Discord summaries, and audit journals.
 Correction/reversal workflows, managed faction definitions, exhaustive Item
