@@ -98,6 +98,16 @@
   padding-right: 0.5rem;
 }
 
+.pneuma-payouts .participant-selection {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.pneuma-payouts .participant-instructions {
+  margin: 0 0 0.35rem;
+}
+
 .pneuma-payouts .payout-metadata {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -267,7 +277,6 @@
 }
 
 .pneuma-payouts .item-drop-heading small {
-  margin-left: auto;
   font-style: italic;
 }
 

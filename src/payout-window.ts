@@ -522,6 +522,7 @@ export class PayoutWindow extends FormApplication {
     const description = document.createElement("input");
     description.type = "text";
     description.placeholder = "Description";
+    description.maxLength = 100;
     description.setAttribute("aria-label", `${item.name} description`);
     description.dataset.itemDescription = "";
     const remove = document.createElement("button");
@@ -904,6 +905,7 @@ export class PayoutWindow extends FormApplication {
   }
 
   async #buildPlan(root: HTMLElement): Promise<PayoutPlan> {
+    this.#validateTextLengths(root);
     const journalData = getPayoutJournalData();
     const sessionLabel = root
       .querySelector<HTMLInputElement>('[name="sessionLabel"]')
@@ -1227,6 +1229,22 @@ export class PayoutWindow extends FormApplication {
       setValue: reward === "reputation",
       description: this.#entryDescription(entry),
     };
+  }
+
+  #validateTextLengths(root: HTMLElement): void {
+    for (const field of root.querySelectorAll<
+      HTMLInputElement | HTMLTextAreaElement
+    >('input[type="text"], textarea')) {
+      if (field.maxLength < 0 || field.value.length <= field.maxLength)
+        continue;
+      const label =
+        field.getAttribute("aria-label") ??
+        field.closest("label")?.querySelector("span")?.textContent?.trim() ??
+        field.placeholder ??
+        field.name ??
+        "Text field";
+      throw new Error(`${label} cannot exceed ${field.maxLength} characters.`);
+    }
   }
 
   async #applyPayout(root: HTMLElement): Promise<void> {

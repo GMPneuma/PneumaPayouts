@@ -47,10 +47,12 @@ const EMPTY_DATA: PayoutJournalData = {
 
 const JOURNAL_OBSERVER = 2;
 const JOURNAL_OWNER = 3;
+const synchronizingHqPageIds = new Set<string>();
 
 export function registerHqIpTotalHandler(): void {
   Hooks.on("updateJournalEntryPage", (page, changes, _options, userId) => {
     if (!game.user?.isGM || userId !== game.user.id) return;
+    if (synchronizingHqPageIds.has(page.id)) return;
     const journalId = game.settings.get(MODULE_ID, PAYOUT_JOURNAL_ID_SETTING);
     if (typeof journalId !== "string" || !journalId) return;
     const journal = game.journal.get(journalId);
@@ -60,12 +62,31 @@ export function registerHqIpTotalHandler(): void {
     if (hqPage?.id !== page.id) return;
 
     const changedText = changes["text.content"];
+    const nestedText = changes.text;
+    const nestedContent =
+      typeof nestedText === "object" && nestedText !== null
+        ? (nestedText as Record<string, unknown>).content
+        : undefined;
     const content =
-      typeof changedText === "string" ? changedText : page.text?.content;
+      typeof changedText === "string"
+        ? changedText
+        : typeof nestedContent === "string"
+          ? nestedContent
+          : undefined;
     if (typeof content !== "string") return;
     const synchronized = synchronizeHqIpTotal(content);
-    if (synchronized !== content)
-      void page.update({ "text.content": synchronized });
+    if (synchronized === content) return;
+
+    synchronizingHqPageIds.add(page.id);
+    void page
+      .update({ "text.content": synchronized })
+      .catch((error) =>
+        console.error(
+          `${MODULE_ID} | Could not synchronize HQ IP total.`,
+          error,
+        ),
+      )
+      .finally(() => synchronizingHqPageIds.delete(page.id));
   });
 }
 

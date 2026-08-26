@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.4 - 2026-08-25
+
+- Moved the participant-selection instruction above the player and Actor list.
+- Left-aligned Item drop instructions beside their icons.
+- Limited faction names to 30 characters and other payout text fields to 100
+  characters, with both form and plan validation.
+- Prevented repeated HQ journal synchronization by reacting only to actual text
+  changes and ignoring module-generated synchronization updates.
+
 ## 0.5.3 - 2026-08-25
 
 - Added compact reward-type icons to every Payout Inbox award.

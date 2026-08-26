@@ -16,6 +16,7 @@
         name="ids.__everyone__"
         value="{{crewRoleId}}"
         placeholder="Whole-crew Discord role ID"
+        maxlength="22"
       />
     </label>
     {{#each players}}
@@ -36,6 +37,7 @@
           name="ids.{{userId}}"
           value="{{discordId}}"
           placeholder="Discord user or role ID"
+          maxlength="22"
         />
       </label>
     {{else}}
