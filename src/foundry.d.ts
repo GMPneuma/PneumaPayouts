@@ -187,6 +187,7 @@ declare class Dialog {
     content: string;
     buttons: Record<string, DialogButtonConfig>;
     default?: string;
+    close?: () => void;
   });
   render(force?: boolean): this;
 }

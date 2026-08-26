@@ -36,6 +36,22 @@ export function getPendingHumanityRolls(
     : [];
 }
 
+export async function clearAllPendingHumanityRolls(): Promise<number> {
+  if (!game.user?.isGM)
+    throw new Error("Only a GM can clear pending Humanity rolls.");
+  const actors = Array.from(game.actors);
+  const count = actors.reduce(
+    (total, actor) => total + getPendingHumanityRolls(actor).length,
+    0,
+  );
+  await Promise.all(
+    actors.map((actor) =>
+      actor.update({ [`flags.${MODULE_ID}.pendingHumanityRolls`]: [] }),
+    ),
+  );
+  return count;
+}
+
 export function registerHumanityPromptHandler(): void {
   Hooks.on("renderChatMessage", (message, html) => {
     const root = html[0];

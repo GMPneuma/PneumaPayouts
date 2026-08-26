@@ -64,6 +64,22 @@ export function hasInboxItemsForCurrentUser(): boolean {
   );
 }
 
+export async function clearAllPayoutAcknowledgments(): Promise<number> {
+  if (!game.user?.isGM)
+    throw new Error("Only a GM can clear payout acknowledgments.");
+  const users = Array.from(game.users);
+  const count = users.reduce((total, user) => {
+    const value = user.getFlag(MODULE_ID, "payoutAcknowledgments");
+    return total + (Array.isArray(value) ? value.length : 0);
+  }, 0);
+  await Promise.all(
+    users.map((user) =>
+      user.update({ [`flags.${MODULE_ID}.payoutAcknowledgments`]: [] }),
+    ),
+  );
+  return count;
+}
+
 export async function createPayoutAcknowledgments(
   payoutRecordId: string,
   plan: PayoutPlan,

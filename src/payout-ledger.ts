@@ -39,6 +39,15 @@ export function getPayoutLedger(): PayoutLedger {
   return structuredClone(stored);
 }
 
+export async function clearPayoutLedger(): Promise<void> {
+  if (!game.user?.isGM) throw new Error("Only a GM can clear payout history.");
+  await game.settings.set(
+    MODULE_ID,
+    PAYOUT_LEDGER_SETTING,
+    structuredClone(EMPTY_LEDGER),
+  );
+}
+
 export async function appendPayoutRecord(
   record: PayoutRecord,
 ): Promise<PayoutLedger> {

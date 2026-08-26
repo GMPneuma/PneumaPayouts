@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.5.5 - 2026-08-26
+
+- Added a GM-only Module Data settings screen showing journal reference data,
+  payout history, unacknowledged payouts, pending Humanity rolls, and
+  module-owned journal contents.
+- Added confirmed controls to clear Reputation, Attendance, HQ data,
+  unacknowledged payouts, pending Humanity rolls, payout history, or all
+  recorded and pending data while preserving configuration.
+- Deleting the registered Payouts journal now resets its hidden reference data
+  before the module creates a clean replacement.
+- Corrected destructive-action confirmation icons for Foundry v12 dialogs.
+
 ## 0.5.4 - 2026-08-25
 
 - Moved the participant-selection instruction above the player and Actor list.

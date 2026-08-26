@@ -50,6 +50,15 @@ export async function appendPayoutLog(
   };
 }
 
+export async function clearPayoutLog(): Promise<number> {
+  if (!game.user?.isGM) throw new Error("Only a GM can clear payout history.");
+  const journal = await ensurePayoutLog();
+  const pageIds = Array.from(journal.pages).map(({ id }) => id);
+  if (pageIds.length)
+    await journal.deleteEmbeddedDocuments("JournalEntryPage", pageIds);
+  return pageIds.length;
+}
+
 function payoutLogOwnership(): Record<string, number> {
   return Object.fromEntries([
     ["default", JOURNAL_NONE],

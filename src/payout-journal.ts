@@ -113,12 +113,56 @@ export function getPayoutJournalData(): PayoutJournalData {
   return structuredClone(value);
 }
 
+export type PayoutJournalDataSection =
+  "reputation" | "attendance" | "hq" | "all";
+
+export async function clearPayoutJournalData(
+  section: PayoutJournalDataSection,
+): Promise<void> {
+  if (!game.user?.isGM)
+    throw new Error("Only a GM can clear payout journal data.");
+  const journal = await ensurePayoutJournal();
+  const updated = getPayoutJournalData();
+  if (section === "reputation" || section === "all")
+    updated.factionReputations = [];
+  if (section === "attendance" || section === "all") updated.attendance = [];
+  if (section === "hq" || section === "all") {
+    updated.hqImprovements = [];
+    updated.hqIpTransactions = [];
+  }
+  await game.settings.set(MODULE_ID, PAYOUT_JOURNAL_DATA_SETTING, updated);
+
+  const pages = new Map(
+    Array.from(journal.pages).map((page) => [page.name, page]),
+  );
+  const updates: Promise<unknown>[] = [];
+  if (section === "hq" || section === "all") {
+    const page = pages.get("HQ");
+    if (page)
+      updates.push(page.update({ "text.content": renderHqPage(updated) }));
+  }
+  if (section === "reputation" || section === "all") {
+    const page = pages.get("Player Reputation");
+    if (page)
+      updates.push(
+        page.update({ "text.content": renderReputationPage(updated) }),
+      );
+  }
+  if (section === "attendance" || section === "all") {
+    const page = pages.get("Attendance");
+    if (page)
+      updates.push(
+        page.update({ "text.content": renderAttendancePage(updated) }),
+      );
+  }
+  await Promise.all(updates);
+}
+
 export async function ensurePayoutJournal(): Promise<FoundryJournalEntry> {
   const storedId = game.settings.get(MODULE_ID, PAYOUT_JOURNAL_ID_SETTING);
-  let journal =
-    typeof storedId === "string" && storedId
-      ? game.journal.get(storedId)
-      : undefined;
+  const hadRegisteredJournal = typeof storedId === "string" && storedId !== "";
+  let journal = hadRegisteredJournal ? game.journal.get(storedId) : undefined;
+  const registeredJournalWasDeleted = hadRegisteredJournal && !journal;
   if (!journal) {
     journal = await JournalEntry.create({
       name: "Payouts",
@@ -146,6 +190,12 @@ export async function ensurePayoutJournal(): Promise<FoundryJournalEntry> {
     await journal.createEmbeddedDocuments("JournalEntryPage", missingPages);
   await journal.update({ ownership: payoutJournalOwnership() });
   await migrateExistingHqPage(journal);
+  if (registeredJournalWasDeleted)
+    await game.settings.set(
+      MODULE_ID,
+      PAYOUT_JOURNAL_DATA_SETTING,
+      structuredClone(EMPTY_DATA),
+    );
   await game.settings.set(MODULE_ID, PAYOUT_JOURNAL_ID_SETTING, journal.id);
   await renderPayoutJournal(journal, getPayoutJournalData());
   return journal;

@@ -1014,3 +1014,62 @@
 .pneuma-payouts .inbox-status--done {
   color: #278b42;
 }
+
+.pneuma-payouts .payout-data-manager-form {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.pneuma-payouts .data-manager-warning {
+  margin: 0;
+  border-left: 3px solid var(--pneuma-accent);
+  background: var(--pneuma-accent-soft);
+  padding: 0.5rem;
+}
+
+.pneuma-payouts .data-manager-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+.pneuma-payouts .data-manager-actions button {
+  display: grid;
+  grid-template-columns: 1.5rem 1fr;
+  align-items: center;
+  width: 100%;
+  margin: 0;
+  text-align: left;
+}
+
+.pneuma-payouts .data-manager-actions button small {
+  grid-column: 2;
+  opacity: 0.7;
+}
+
+.pneuma-payouts .data-manager-clear-all {
+  margin: 0;
+  border-color: var(--pneuma-accent);
+}
+
+.pneuma-payouts .data-manager-json {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.pneuma-payouts .data-manager-json textarea {
+  min-height: 16rem;
+  flex: 1;
+  resize: none;
+  background: rgba(255, 255, 255, 0.88);
+  color: #1b1b1b;
+  font-family: monospace;
+  font-size: 0.75rem;
+  white-space: pre;
+}
