@@ -1,4 +1,5 @@
 import { MODULE_ID, PAYOUT_ACKNOWLEDGMENTS_ENABLED_SETTING } from "./constants";
+import { createUniqueId } from "./id";
 import {
   clearAllPendingHumanityRolls,
   getPendingHumanityRolls,
@@ -132,7 +133,7 @@ export async function createPayoutAcknowledgments(
         [`flags.${MODULE_ID}.payoutAcknowledgments`]: [
           ...retainedEntries,
           {
-            id: crypto.randomUUID(),
+            id: createUniqueId(),
             payoutRecordId,
             sessionLabel: plan.sessionLabel,
             inGameDate: plan.inGameDate,

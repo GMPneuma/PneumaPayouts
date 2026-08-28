@@ -144,9 +144,11 @@ Status key: `[x]` complete, `[~]` usable but incomplete, `[ ]` not implemented,
 
 ## Current release state
 
-Version `0.9.1` provides the complete intended payout workflow: character and
+Version `0.9.2` provides the complete intended payout workflow: character and
 communal rewards, attendance, HQ IP, faction Reputation, Item delivery, player
 acknowledgment and Humanity rolls, Discord summaries, and audit journals.
+It also supports the Cyberpunk RED system's light and dark themes and remains
+compatible with Foundry installations served without a secure browser context.
 Correction/reversal workflows, managed faction definitions, exhaustive Item
 edge-case testing, and containerized Foundry integration tests are intentionally
 out of scope for this friendly-game module.

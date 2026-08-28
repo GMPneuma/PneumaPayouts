@@ -34,8 +34,8 @@
 }
 
 #controls [data-tool="pneuma-payouts-inbox"] i.pneuma-inbox-pending {
-  color: #ffd24a;
-  text-shadow: 0 0 7px #ff7800;
+  color: #d95b64;
+  text-shadow: 0 0 6px #6f1119;
 }
 
 .pneuma-payouts .window-content {
@@ -1086,7 +1086,7 @@
 }
 
 .pneuma-payouts .inbox-card--pending {
-  border-left-color: var(--color-level-warning, #b26b00);
+  border-left-color: var(--pneuma-accent);
 }
 
 .pneuma-payouts .inbox-card-header {
@@ -1138,7 +1138,7 @@
 }
 
 .pneuma-payouts .inbox-card--pending .inbox-card-status {
-  color: var(--color-level-warning, #9a5b00);
+  color: var(--pneuma-accent);
 }
 
 .pneuma-payouts .inbox-card-body {
@@ -1267,4 +1267,111 @@
   font-family: monospace;
   font-size: 0.75rem;
   white-space: pre;
+}
+
+/* Cyberpunk RED dark mode overrides. Light mode intentionally remains above. */
+html[data-cpr-theme="darkmode"] .pneuma-payouts {
+  --pneuma-accent: #e06a72;
+  --pneuma-blue: #6eb4e3;
+  --pneuma-green: #73c283;
+  --pneuma-purple: #b493cc;
+  --pneuma-link: #78bff0;
+  --pneuma-accent-soft: rgba(224, 106, 114, 0.16);
+  --pneuma-panel: rgba(255, 255, 255, 0.055);
+  --pneuma-panel-strong: rgba(255, 255, 255, 0.1);
+  --color-border-light-primary: #657178;
+  --color-text-dark-secondary: #b8c2c7;
+  --color-level-error: #ff7474;
+  --color-level-warning: #e3aa53;
+  --color-bg-option: #30383d;
+}
+
+html[data-cpr-theme="darkmode"] .pneuma-payouts .wizard-step--active {
+  background: rgba(180, 147, 204, 0.18);
+}
+
+html[data-cpr-theme="darkmode"]
+  .pneuma-payouts
+  [data-step-panel="participants"]
+  .payout-heading,
+html[data-cpr-theme="darkmode"] .pneuma-payouts .participant-selection,
+html[data-cpr-theme="darkmode"] .pneuma-payouts .individual-rewards {
+  background: rgba(180, 147, 204, 0.1);
+}
+
+html[data-cpr-theme="darkmode"] .pneuma-payouts .communal-payouts,
+html[data-cpr-theme="darkmode"] .pneuma-payouts [data-preview-communal] li {
+  background: rgba(110, 180, 227, 0.1);
+}
+
+html[data-cpr-theme="darkmode"] .pneuma-payouts .group-payouts,
+html[data-cpr-theme="darkmode"] .pneuma-payouts [data-preview-group] li {
+  background: rgba(115, 194, 131, 0.1);
+}
+
+html[data-cpr-theme="darkmode"] .pneuma-payouts .preview-heading,
+html[data-cpr-theme="darkmode"] .pneuma-payouts .preview-section h3 {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+html[data-cpr-theme="darkmode"]
+  .pneuma-payouts
+  .preview-recipient
+  .preview-item--primary {
+  background: rgba(115, 194, 131, 0.13);
+}
+
+html[data-cpr-theme="darkmode"]
+  .pneuma-payouts
+  .preview-recipient
+  .preview-item--individual {
+  background: rgba(180, 147, 204, 0.14);
+}
+
+html[data-cpr-theme="darkmode"] .pneuma-payouts [data-entry-amount]:disabled {
+  border-color: #69737a;
+  background: #343b40;
+  color: #aeb7bc;
+}
+
+html[data-cpr-theme="darkmode"] .pneuma-payouts .payout-validation-summary {
+  background: rgba(255, 116, 116, 0.12);
+}
+
+html[data-cpr-theme="darkmode"] .pneuma-payouts .payout-container-warning {
+  background: rgba(227, 170, 83, 0.12);
+}
+
+html[data-cpr-theme="darkmode"] .pneuma-payouts .inbox-gm-panel {
+  background: #30383d;
+}
+
+html[data-cpr-theme="darkmode"] .pneuma-payouts .presence--active,
+html[data-cpr-theme="darkmode"] .pneuma-payouts .inbox-status--done {
+  color: var(--pneuma-green);
+}
+
+html[data-cpr-theme="darkmode"] .pneuma-humanity-prompt--resolved {
+  border-left-color: #73c283;
+}
+
+html[data-cpr-theme="darkmode"] .pneuma-payouts .data-manager-json textarea,
+html[data-cpr-theme="darkmode"] .discord-summary-dialog textarea {
+  background: var(--cpr-background-foundry-input, #454b50);
+  color: var(--cpr-text-foundry-input, #eaeaea);
+}
+
+html[data-cpr-theme="darkmode"] .discord-links-list .discord-crew-link {
+  border-bottom-color: #657178;
+}
+
+html[data-cpr-theme="darkmode"] .discord-crew-link > span {
+  color: #b8c2c7;
+}
+
+html[data-cpr-theme="darkmode"]
+  .payout-container-form
+  .payout-container-warning {
+  border-left-color: #e3aa53;
+  background: rgba(227, 170, 83, 0.12);
 }

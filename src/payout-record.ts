@@ -1,4 +1,5 @@
 import { PAYOUT_SCHEMA_VERSION } from "./constants";
+import { createUniqueId } from "./id";
 
 export const PAYOUT_REWARD_TYPES = [
   "money",
@@ -76,7 +77,7 @@ export function createPayoutRecord(
 
   return {
     schemaVersion: PAYOUT_SCHEMA_VERSION,
-    id: crypto.randomUUID(),
+    id: createUniqueId(),
     createdAt: new Date().toISOString(),
     createdByUserId: input.createdByUserId,
     createdByUserName: input.createdByUserName.trim(),

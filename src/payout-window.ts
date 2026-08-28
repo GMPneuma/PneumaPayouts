@@ -14,6 +14,7 @@ import {
   type RewardEntry,
 } from "./payout-execution";
 import { getPayoutJournalData } from "./payout-journal";
+import { createUniqueId } from "./id";
 import { getLastPayoutDate, saveLastPayoutDate } from "./payout-date";
 import {
   getDefaultPayoutContainerId,
@@ -530,7 +531,7 @@ export class PayoutWindow extends FormApplication {
   #appendDroppedItem(zone: HTMLElement, item: PayoutItem): void {
     const list = zone.querySelector<HTMLElement>("[data-item-drop-list]");
     if (!list) return;
-    const key = crypto.randomUUID();
+    const key = createUniqueId();
     this.#droppedItems.set(key, item);
 
     const entry = document.createElement("div");

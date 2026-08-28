@@ -1,4 +1,5 @@
 import { MODULE_ID } from "./constants";
+import { createUniqueId } from "./id";
 
 export interface HumanityPrompt {
   actorId: string;
@@ -21,7 +22,7 @@ export function createPendingHumanityRoll(
 ): PendingHumanityRoll {
   return {
     ...prompt,
-    id: crypto.randomUUID(),
+    id: createUniqueId(),
     payoutRecordId,
     createdAt: new Date().toISOString(),
   };

@@ -1,4 +1,10 @@
 /** Minimal globals used by this starter. Add full Foundry typings as the module grows. */
+declare const foundry: {
+  utils: {
+    randomID(length?: number): string;
+  };
+};
+
 declare const Hooks: {
   on(
     event: "getSceneControlButtons",

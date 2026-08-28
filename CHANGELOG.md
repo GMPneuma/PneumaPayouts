@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.9.2 - 2026-08-28
+
+- Added Cyberpunk RED system dark-mode styling while preserving the existing
+  light-mode appearance.
+- Replaced orange pending-payout indicators with the module's restrained red
+  accent in both the Inbox and Token Controls.
+- Fixed payout failures on HTTP-hosted Foundry servers and older browsers by
+  falling back to Foundry's ID generator when `crypto.randomUUID()` is not
+  available.
+
 ## 0.9.1 - 2026-08-26
 
 - Fixed dynamic Primary Payout rows so Description expands into all remaining
