@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.9.4 - 2026-09-06
+
+- Added optional No Place Like Home integration for awarding HQ IP directly to
+  compatible HQ journals and selecting their linked shared stash.
+- Added guarded compatibility settings for No Place Like Home 0.4.1 and earlier,
+  including an explicit override for newer or unrecognized versions.
+- Refined communal payout destinations, item drop targets, tooltips, light and
+  dark theme styling, and settings layout.
+
 ## 0.9.3 - 2026-09-06
 
 - Matched character and container ledger entries to the system's native

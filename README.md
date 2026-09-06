@@ -44,3 +44,13 @@ The persistent storage design is documented in
 
 Player/Actor association behavior is documented in
 [docs/player-discovery.md](docs/player-discovery.md).
+
+## Optional No Place Like Home integration
+
+Enable **Integrate with No Place Like Home** in Payouts settings while that module is active. The setting defaults to off and is disabled when the module is unavailable. The settings panel links to the module's Discord post.
+
+Select an HQ beside the HQ IP field to award IP once to that journal. The current balance comes from the HQ; Payouts retains award history, not a synchronized spendable balance. Selecting an HQ with a linked stash selects it for communal payouts; the container remains editable. Only the HQ IP and activity-log flags are updated. A failed payout attempts to restore those fields and reports a rollback conflict if newer HQ activity intervenes.
+
+The adapter supports No Place Like Home schema 1 (inspected version 0.4.1). With integration off, the original journal-only HQ IP flow remains available. Run `node --test tests/hq-integration.test.mjs` for adapter and payout rollback checks.
+
+Integration accepts No Place Like Home version **0.4.1 or earlier** by default. Newer or unknown versions require the separate **Override No Place Like Home version check** setting. The override defaults to off and bypasses only the version check; the module must remain active and HQ data must still pass validation.

@@ -1,3 +1,4 @@
+import { applyHqAward, type HqAward } from "./hq-integration";
 import { appendPayoutRecord } from "./payout-ledger";
 import { MODULE_ID } from "./constants";
 import {
@@ -64,6 +65,7 @@ export interface PayoutContainerInput {
 }
 
 export interface PayoutPlan {
+  hqAward?: HqAward;
   sessionLabel: string;
   inGameDate: string;
   notes: string;
@@ -196,10 +198,12 @@ export async function executePayoutPlan(plan: PayoutPlan): Promise<void> {
     : null;
   let containerUpdated = false;
   const promptMessages: FoundryChatMessage[] = [];
+  let rollbackHq: (() => Promise<void>) | null = null;
   let rollbackJournal: (() => Promise<void>) | null = null;
   let rollbackAcknowledgments: (() => Promise<void>) | null = null;
   let rollbackPayoutLog: (() => Promise<void>) | null = null;
   try {
+    if (plan.hqAward) rollbackHq = await applyHqAward(plan.hqAward);
     if (plan.payoutContainer) {
       const { actor, moneyAmount, moneyDescription } = plan.payoutContainer;
       if (moneyAmount) {
@@ -278,6 +282,16 @@ export async function executePayoutPlan(plan: PayoutPlan): Promise<void> {
       await rollbackAcknowledgments().catch(() => undefined);
     if (rollbackPayoutLog) await rollbackPayoutLog().catch(() => undefined);
     await Promise.allSettled(promptMessages.map((message) => message.delete()));
+    if (rollbackHq) {
+      try {
+        await rollbackHq();
+      } catch (rollbackError) {
+        ui.notifications.error(
+          "HQ IP rollback failed. Check the HQ balance before retrying this payout.",
+        );
+        console.error(rollbackError);
+      }
+    }
     throw error;
   }
 }

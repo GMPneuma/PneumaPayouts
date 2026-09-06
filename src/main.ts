@@ -1,4 +1,5 @@
 import "./styles/pneuma-payouts.css";
+import { registerHqIntegration } from "./hq-integration";
 import { pneumaPayoutsApi } from "./api";
 import { MODULE_ID } from "./constants";
 import { registerDiscordLinks } from "./discord-summary";
@@ -29,6 +30,7 @@ registerHqIpTotalHandler();
 Hooks.once("init", () => {
   console.info(`${MODULE_ID} | Initializing`);
 
+  registerHqIntegration();
   registerPayoutLedger();
   registerDiscordLinks();
   registerPayoutJournalSettings();

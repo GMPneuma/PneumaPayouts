@@ -185,18 +185,48 @@
       <div class="reward-layout">
         <fieldset class="primary-payouts communal-payouts">
           <legend><i class="fas fa-building"></i> Communal Payout</legend>
-          <p class="fieldset-hint">Use Container Actors with linked tokens.</p>
-
-          <label class="payout-container-selector">
-            <span><i class="fas fa-box-open"></i> Container</span>
+          {{#if hqIntegration}}
+            <div class="payout-destination-selector payout-hq-selector">
+              <label for="payout-hq-destination">HQ
+                <span
+                  class="payout-help"
+                  tabindex="0"
+                  role="img"
+                  aria-label="HQ destination help"
+                  title="HQ IP is awarded once to this HQ. Its linked stash is selected below when available; you can choose another container. Payouts retains the award history."
+                >?</span></label>
+              <select id="payout-hq-destination" name="hqJournalId">
+                <option value="">Select an HQ</option>
+                {{#each headquarters}}<option
+                    value="{{id}}"
+                    data-balance="{{balance}}"
+                    data-stash-id="{{stashId}}"
+                  >{{name}}</option>{{/each}}
+              </select>
+              <small class="hq-balance" data-hq-balance hidden></small>
+            </div>
+          {{/if}}
+          <div class="payout-destination-selector payout-container-selector">
+            <label for="payout-container-destination"><i
+                class="fas fa-box-open"
+              ></i>
+              Container
+              <span
+                class="payout-help"
+                tabindex="0"
+                role="img"
+                aria-label="Container help"
+                title="Destination for communal money and items. Use a Container Actor with a linked token for player access."
+              >?</span></label>
             <select
+              id="payout-container-destination"
               name="payoutContainerId"
               data-selected="{{defaultPayoutContainerId}}"
             >
               <option value="">None selected</option>
-              {{#each payoutContainers}}
-                <option value="{{actorId}}">{{actorName}}</option>
-              {{/each}}
+              {{#each payoutContainers}}<option
+                  value="{{actorId}}"
+                >{{actorName}}</option>{{/each}}
             </select>
             <a
               href="#"
@@ -205,7 +235,7 @@
               data-payout-container-link
               hidden
             ></a>
-          </label>
+          </div>
 
           <label class="primary-payout-row">
             <span><i class="fas fa-building"></i> HQ IP</span>
