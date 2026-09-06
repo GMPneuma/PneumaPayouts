@@ -144,7 +144,7 @@ Status key: `[x]` complete, `[~]` usable but incomplete, `[ ]` not implemented,
 
 ## Current release state
 
-Version `0.9.2` provides the complete intended payout workflow: character and
+Version `0.9.3` provides the complete intended payout workflow: character and
 communal rewards, attendance, HQ IP, faction Reputation, Item delivery, player
 acknowledgment and Humanity rolls, Discord summaries, and audit journals.
 It also supports the Cyberpunk RED system's light and dark themes and remains

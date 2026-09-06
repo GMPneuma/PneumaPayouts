@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.3 - 2026-09-06
+
+- Matched character and container ledger entries to the system's native
+  "Increased by 100 to 500" wording, including decreases. Existing entries retain
+  their original text.
+
 ## 0.9.2 - 2026-08-28
 
 - Added Cyberpunk RED system dark-mode styling while preserving the existing

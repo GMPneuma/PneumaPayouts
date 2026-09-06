@@ -294,7 +294,7 @@ function buildContainerMoneyUpdate(
     arrayAt(actor.system, "wealth.transactions"),
   );
   transactions.push([
-    `${amount >= 0 ? "Increased" : "Decreased"} wealth by ${Math.abs(amount)} (total ${newValue})`,
+    `${amount >= 0 ? "Increased" : "Decreased"} by ${Math.abs(amount)} to ${newValue}`,
     `${sessionLabel.trim() || "Payout"} - ${description.trim() || "No description"}`,
   ]);
   return {
@@ -336,7 +336,7 @@ function buildActorUpdate(
       ).trim();
       const transactionDescription = `${sessionLabel.trim() || "Payout"} - ${description || "No description"}`;
       transactions.push([
-        `${related.amount >= 0 ? "Increased" : "Decreased"} ${path} by ${Math.abs(related.amount)} (total ${related.newValue})`,
+        `${related.amount >= 0 ? "Increased" : "Decreased"} by ${Math.abs(related.amount)} to ${related.newValue}`,
         transactionDescription,
       ]);
     }
