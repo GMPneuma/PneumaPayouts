@@ -144,21 +144,25 @@ Status key: `[x]` complete, `[~]` usable but incomplete, `[ ]` not implemented,
 
 ## Current release state
 
-Version `0.9.3` provides the complete intended payout workflow: character and
+Version `1.0.0` provides the complete intended payout workflow: character and
 communal rewards, attendance, HQ IP, faction Reputation, Item delivery, player
 acknowledgment and Humanity rolls, Discord summaries, and audit journals.
 It also supports the Cyberpunk RED system's light and dark themes and remains
 compatible with Foundry installations served without a secure browser context.
+The version 1.0 compatibility baseline is Foundry v12, the Cyberpunk RED Core
+system, and payout record schema version 1. Optional No Place Like Home
+integration is guarded by version and data validation.
 Correction/reversal workflows, managed faction definitions, exhaustive Item
 edge-case testing, and containerized Foundry integration tests are intentionally
 out of scope for this friendly-game module.
 
 ## Next recommended work
 
-1. Continue native-looking UI refinement for the Payout and Payout Inbox forms.
-2. Address defects found during normal campaign use.
+1. Maintain the stable version 1.0 payout workflow and address defects found
+   during normal campaign use.
+2. Plan larger features as backward-compatible 1.x additions where possible.
 3. Revisit Foundry compatibility when Cyberpunk RED supports a newer core
-   version.
+   version; reserve 2.0 for changes that break stored data or the public API.
 
 ## Decisions to make while implementing
 
